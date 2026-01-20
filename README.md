@@ -17,28 +17,38 @@ DTRA (Dynamic Threat Response Agent) is an advanced cybersecurity monitoring sys
 
 ## 📂 Project Structure
 
+The project is organized into two major versions:
+
+### **v1/ - Classic DTRA (CICIDS2017)**
+The original binary classification system.
+```bash
+DTRA/v1/
+├── server/             # Flask API & Binary DNN
+│   ├── api.py          # Legacy single-stage API
+│   └── detector.py     # Binary classifier logic
+├── ui/                 # Classic Dashboard
+└── models/             # Legacy models (dtra_detector_model.h5)
+```
+
+### **v2/ - DTRA Next-Gen (CIC IIoT 2025)**
+The upgraded **Two-Stage Hybrid Architecture** with Explainable AI.
+```bash
+DTRA/v2/
+├── server/             # Advanced Backend
+│   ├── config.py       # Updated for 71 features & 7 attack classes
+│   └── api.py          # Multi-stage API logic
+├── CICIIOT2025/        # New dataset processing
+│   └── processed/      # Preprocessed numpy arrays
+├── models/             # Two-stage models (XGBoost + DNN + Categorizer)
+└── train_v2.py         # Advanced training pipeline
+```
+
+### **Global Files**
 ```bash
 DTRA/
-├── server/             # Python Backend & AI Logic
-│   ├── api.py          # FLASK API Server (Entry Point)
-│   ├── config.py       # Configuration & Feature Definitions
-│   ├── detector.py     # AI Model Wrapper Classes
-│   ├── decider.py      # Q-Learning & Hybrid Decision Logic
-│   └── train.py        # Model Training Scripts
-│
-├── ui/                 # Frontend Dashboards
-│   ├── soc_dashboard.html    # ✅ MAIN: Professional SOC Console
-│   └── simple_dashboard.html # 🛠️ DEBUG: Minimal Test Dashboard
-│
-├── models/             # Pre-trained AI Models
-│   ├── dtra_detector_model.h5  # Keras Deep Learning Model
-│   ├── dtra_scaler.pkl         # Scikit-Learn Scaler
-│   └── dtra_q_table.npy        # Q-Learning Agent Memory
-│
-├── misc_files/         # Legacy Scripts & Research
-│   └── (Test scripts, old dashboards, and experimental code)
-│
-└── uploads/            # Temp storage for analyzed CSVs
+├── docs/               # Strategic planning & documentation
+├── README.md           # This file
+└── requirements.txt    # Project dependencies
 ```
 
 ## 🛠️ Installation & Setup
