@@ -16,3 +16,6 @@ training_checkpoints/
 # OS generated
 .DS_Store
 Thumbs.db
+
+# Documentation (Local Only)
+docs/
