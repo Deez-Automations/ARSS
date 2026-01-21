@@ -1,101 +1,128 @@
 # 🛡️ DTRA - Dynamic Threat Response Agent
 
-**An AI-Powered Security Operations Center (SOC) Console for Real-Time Network Threat Detection.**
+![Status](https://img.shields.io/badge/Status-Operational-success?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/AI-TensorFlow%20%2B%20XGBoost-orange?style=for-the-badge)
+![Flask](https://img.shields.io/badge/Backend-Flask-lightgrey?style=for-the-badge&logo=flask)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-DTRA (Dynamic Threat Response Agent) is an advanced cybersecurity monitoring system that uses **Hybrid AI** (Deep Learning + Random Forest) and **Reinforcement Learning** (Q-Learning) to detect, classify, and respond to network attacks in real-time.
+> **Next-Gen AI Security Operations Center (SOC) Console for Real-Time Network Threat Detection.**
 
+DTRA (Dynamic Threat Response Agent) is an advanced cybersecurity monitoring system that uses **Hybrid AI** (Deep Learning + XGBoost) and **Reinforcement Learning** (Q-Learning) to detect, classify, and respond to network attacks in real-time.
+
+---
 
 ## 🚀 Key Features
 
-*   **🧠 Hybrid AI Engine:** Combines the reliability of **Random Forest** with the complexity handling of **Deep Neural Networks** to achieve **98.9% accuracy** on the CICIDS2017 dataset.
-*   **🤖 Q-Learning Guard Agent:** An autonomous reinforcement learning agent that dynamically decides the best response action (Block, Log, or Ignore) based on threat confidence and network state.
-*   **📊 Professional SOC Dashboard:** A premium, dark-mode web console featuring:
-    *   **Traffic Analysis:** Real-time animated traffic volume graphs.
-    *   **Severity Distribution:** Live breakdown of threat levels (Critical vs. Low).
-    *   **Packet Inspector:** Searchable, visible log of deeply analyzed network packets.
-*   **⚡ High-Performance API:** Flask-based backend capable of processing 300k+ packet flows instantly using optimized vectorization and caching.
+*   **🧠 Hybrid AI Engine (v2):** A state-of-the-art **Two-Stage** pipeline:
+    *   **Stage 1 (Binary):** Ensemble of XGBoost + Random Forest for ultra-fast "Attack/Benign" detection (99.8% Accuracy).
+    *   **Stage 2 (Categorical):** Deep Neural Network (DNN) to classify specific attack families (DoS, DDoS, Web, Brute Force).
+*   **🚦 Live Traffic Analysis:** Support for real-time traffic streaming via API, capable of handling high-velocity packet flows.
+*   **💡 Explainable AI (XAI):** Integrated **SHAP** (SHapley Additive exPlanations) to tell you *why* a packet was blocked (e.g., "High Flow Duration + TCP Syn Flag").
+*   **📊 Premium SOC Dashboard:** A dark-mode, cinematic web console featuring:
+    *   **Live Attack Stream:** Real-time table of incoming threats.
+    *   **Threat Severity Dist:** Visual breakdown of Critical vs. Benign traffic.
+    *   **Interactive Charts:** Dynamic Chart.js visualizations.
+*   **⚡ High-Performance:** Flask-based backend capable of caching results and serving them instantly to the UI.
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+graph LR
+    A[Traffic Source] -- JSON Stream --> B(Flask API Server)
+    B -- Stage 1: Detection --> C{Is Attack?}
+    C -- No --> D[Allow Packet]
+    C -- Yes --> E[Stage 2: Classification]
+    E --> F[Explainable AI (SHAP)]
+    E --> G[Q-Learning Agent Action]
+    G --> H[Results Cache]
+    H -- Poll /api/recent --> I[SOC Dashboard]
+```
+
+---
 
 ## 📂 Project Structure
 
 The project is organized into two major versions:
 
-### **v1/ - Classic DTRA (CICIDS2017)**
-The original binary classification system.
-```bash
-DTRA/v1/
-├── server/             # Flask API & Binary DNN
-│   ├── api.py          # Legacy single-stage API
-│   └── detector.py     # Binary classifier logic
-├── ui/                 # Classic Dashboard
-└── models/             # Legacy models (dtra_detector_model.h5)
-```
+### **v2/ - DTRA Next-Gen (Recommended)**
+The upgraded **Two-Stage Hybrid Architecture** with Live Analysis.
 
-### **v2/ - DTRA Next-Gen (CIC IIoT 2025)**
-The upgraded **Two-Stage Hybrid Architecture** with Explainable AI.
 ```bash
 DTRA/v2/
 ├── server/             # Advanced Backend
-│   ├── config.py       # Updated for 71 features & 7 attack classes
-│   └── api.py          # Multi-stage API logic
-├── CICIIOT2025/        # New dataset processing
-│   └── processed/      # Preprocessed numpy arrays
-├── models/             # Two-stage models (XGBoost + DNN + Categorizer)
-├── train_v2.py         # Advanced training pipeline
-└── replay_traffic.py   # 🚦 Live Traffic Generator (New)
+│   ├── api.py          # Multi-stage API logic with /api/recent caching
+│   └── config.py       # Configuration for 71-feature vector
+├── ui/                 # Next-Gen Dashboard
+│   └── soc_dashboard.html  # Standalone Premium Dashboard
+├── models/             # Trained AI Models
+│   ├── dtra_xgb_binary.pkl # Stage 1 Model
+│   └── dtra_categorizer.h5 # Stage 2 Model
+├── replay_traffic.py   # 🚦 Live Traffic Generator Script
+└── train_v2.py         # Advanced training pipeline
 ```
 
-### **Global Files**
-```bash
-DTRA/
-├── docs/               # Strategic planning & documentation
-├── README.md           # This file
-└── requirements.txt    # Project dependencies
-```
-
-## 🛠️ Installation & Setup
-
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/StartLivin-DEEZ/DTRA.git
-    cd DTRA
-    ```
-
-2.  **Install Dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3.  **Start the Server**
-    Navigate to the `server` directory and run the API:
-    ```bash
-    cd server
-    python api.py
-    ```
-    *You should see:* `🚀 DTRA API Server running on port 5000`
-
-4.  **Launch the Dashboard**
-    *   Open `ui/soc_dashboard.html` directly in your web browser.
-    *   Upload a CSV dataset (e.g., CICIDS2017 sample) to start analysis.
-
-## 🧪 Usage
-
-1.  **Select a Dataset:** Click the upload area in the dashboard.
-2.  **Run Analysis:** Click "Run Analysis". The AI will process the file.
-3.  **Monitor:** Watch the **Q-Learning Agent** make decisions in real-time and filter the **Threat Logs** to investigate specific attacks.
-
-## 🤖 How It Works
-
-1.  **Ingestion:** Configures raw PCAP/CSV data features into the exact 79-feature vector expected by the model.
-2.  **Preprocessing:** Cleans data (Infinity/NaN handling) -> Imputes missing values -> Scales (StandardScaler).
-3.  **Prediction:** The Neural Network predicts a `Danger Score` (0.0 - 1.0).
-4.  **Decision:** The Q-Learning Agent observes the score + current threat rate -> Chooses an Action (Block/Log/Ignore).
-5.  **Visualization:** Results are streamed to the Dashboard via JSON API.
-
-## 🔒 Security & Performance
-
-*   **Input Sanitization:** Robust handling of malformed CSVs and "Infinity" overflow attacks.
-*   **Batch Processing:** Optimized for large datasets (300k+ rows) using NumPy vectorization.
-*   **Local Execution:** All analysis happens locally; no data leaves your machine.
+### **v1/ - Classic DTRA**
+The original single-stage binary classification system (Legacy).
 
 ---
-*Created for CS 351 Project - GIKI*
+
+## 🛠️ Installation & Quick Start
+
+### Prerequisites
+- Python 3.8+
+- Git
+
+### 1. Clone & Install
+```bash
+git clone https://github.com/StartLivin-DEEZ/DTRA.git
+cd DTRA
+pip install -r requirements.txt
+```
+
+### 2. Start the Server (Terminal 1)
+This powers the AI engine and API endpoints.
+```bash
+python v2/server/api.py
+```
+> *Output:* `📡 Listening for traffic on http://127.0.0.1:5000`
+
+### 3. Start Traffic Generator (Terminal 2)
+This script simulates real-time network traffic attacks.
+```bash
+python v2/replay_traffic.py
+```
+> *Output:* `📤 Sent packet #1...`
+
+### 4. Launch Dashboard
+Open `v2/ui/soc_dashboard.html` in your web browser.
+1. Click **"Start Scanning"**.
+2. Watch the live attacks pour in! 🛡️
+
+---
+
+## 🔬 Tech Stack
+
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **AI / ML** | **TensorFlow Keras** | Deep Neural Networks for categorical classification. |
+| | **XGBoost** | High-speed gradient boosting for initial detection. |
+| | **SHAP** | Model explainability and feature importance. |
+| **Backend** | **Flask (Python)** | REST API server for model serving and log management. |
+| **Frontend** | **HTML5 / CSS3** | Modern, responsive dark-mode UI. |
+| | **Chart.js** | Dynamic real-time plotting. |
+| **Data** | **CIC-IIoT-2025** | Trained on the latest IIoT security dataset. |
+
+---
+
+## 🛡️ Security & Performance
+
+*   **Duplicate Prevention:** Dashboard logic filters unique packet IDs to prevent stats inflation.
+*   **Result Caching:** Server maintains a rolling cache of recent analysis for high-performance polling.
+*   **Input Sanitization:** Robust handling of malformed JSON packets.
+
+---
+*Created for CS 351 Project - GIKI* 
+*© 2026 DTRA Team*
