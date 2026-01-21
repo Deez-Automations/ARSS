@@ -40,7 +40,8 @@ DTRA/v2/
 ├── CICIIOT2025/        # New dataset processing
 │   └── processed/      # Preprocessed numpy arrays
 ├── models/             # Two-stage models (XGBoost + DNN + Categorizer)
-└── train_v2.py         # Advanced training pipeline
+├── train_v2.py         # Advanced training pipeline
+└── replay_traffic.py   # 🚦 Live Traffic Generator (New)
 ```
 
 ### **Global Files**
