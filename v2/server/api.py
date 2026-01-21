@@ -43,9 +43,10 @@ class DTRASystem:
         self.threshold = self.ensemble_config.get('threshold', 0.5)
         print(f"      Detection Threshold: {self.threshold}")
 
-        # 3. Load Stage 2 Model (Attack Categorizer)
-        print("   🧠 Loading Stage 2: Attack Categorizer...")
+        # 3. Load Stage 2 Models (DNN + XGBoost Stacking)
+        print("   🧠 Loading Stage 2: Attack Categorizer (Ensemble)...")
         self.categorizer = load_model(config.CATEGORIZER_MODEL_PATH)
+        self.categorizer_xgb = joblib.load(os.path.join(config.MODELS_DIR, 'dtra_xgb_categorizer.pkl'))
         self.attack_classes = config.ATTACK_CLASSES
 
         # 4. Load Explainability Module
@@ -80,7 +81,7 @@ class DTRASystem:
         Full v2 Pipeline:
         1. Preprocess
         2. Stage 1 (Ensemble) -> Attack/Benign
-        3. Stage 2 (Categorizer) -> Attack Type (if Attack)
+        3. Stage 2 (Ensemble) -> Attack Type (if Attack)
         4. Explain -> SHAP (if Attack)
         5. Decide -> Q-Action
         """
@@ -100,7 +101,7 @@ class DTRASystem:
         
         X_scaled = self.scaler.transform(self.imputer.transform(input_df))
         
-        # 2. Stage 1: Ensemble Detection
+        # 2. Stage 1: Ensemble Detection (Binary)
         xgb_prob = self.xgb_model.predict_proba(X_scaled)[:, 1][0]
         dnn_prob = self.dnn_binary.predict(X_scaled, verbose=0).flatten()[0]
         
@@ -117,8 +118,19 @@ class DTRASystem:
 
         # 3. Stage 2 & 4. Decisions (Only if Attack)
         if is_attack:
-            # Predict Category
-            cat_probs = self.categorizer.predict(X_scaled, verbose=0)[0]
+            # Predict Category (ENSEMBLE STACKING)
+            try:
+                # DNN Probabilities
+                dnn_cat_probs = self.categorizer.predict(X_scaled, verbose=0)[0]
+                # XGBoost Probabilities
+                xgb_cat_probs = self.categorizer_xgb.predict_proba(X_scaled)[0]
+                
+                # Soft Voting (Average)
+                cat_probs = (dnn_cat_probs + xgb_cat_probs) / 2
+            except Exception as e:
+                print(f"⚠️ Ensemble Error: {e}. Fallback to DNN only.")
+                cat_probs = self.categorizer.predict(X_scaled, verbose=0)[0]
+
             cat_idx = np.argmax(cat_probs)
             attack_type = self.attack_classes[cat_idx]
             confidence = float(cat_probs[cat_idx])
@@ -127,14 +139,6 @@ class DTRASystem:
             result["confidence"] = confidence
             
             # Generate Explanation (SHAP)
-            # We explain based on the RAW (or imputed) feature values, not scaled, 
-            # but TreeExplainer handles the model side. 
-            # NOTE: Our explainer wraps the XGB model which expects *processed* data if it was trained on it.
-            # Since XGB was trained on X_train (scaled), we pass X_scaled.
-            # But for visual "value" in the UI, we want raw values. 
-            # The explainer helper handles the mapping if we pass X_scaled but provide raw lookup?
-            # For now, let's pass the input (X_scaled) the model actually sees.
-            
             explanation = self.explainer.explain_packet(X_scaled[0])
             result["explanation"] = explanation
             
