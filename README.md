@@ -30,15 +30,30 @@ DTRA (Dynamic Threat Response Agent) is an advanced cybersecurity monitoring sys
 ## 🏛️ System Architecture
 
 ```mermaid
-graph LR
-    A[Traffic Source] -- JSON Stream --> B[Flask API Server]
-    B -- Stage 1: Detection --> C{Is Attack?}
-    C -- No --> D[Allow Packet]
-    C -- Yes --> E[Stage 2: Classification]
-    E --> F[Explainable AI - SHAP]
-    E --> G[Q-Learning Agent Action]
-    G --> H[Results Cache]
-    H -- Poll /api/recent --> I[SOC Dashboard]
+graph TD
+    subgraph S1 [Stage 1: The Gatekeeper]
+        Input[Packet 71 Features] --> XGB1[XGBoost Binary]
+        Input --> DNN1[DNN Binary]
+        XGB1 -- Prob A --> Vote1((Soft Vote))
+        DNN1 -- Prob B --> Vote1
+        Vote1 -- Score > 0.3 --> IsAttack{Is Attack?}
+    end
+
+    subgraph S2 [Stage 2: The Expert Ensemble]
+        IsAttack -- Yes --> XGB2[XGBoost Categorizer]
+        IsAttack -- Yes --> DNN2[Deep DNN Categorizer]
+        XGB2 -- Probs --> Vote2((Ensemble Avg))
+        DNN2 -- Probs --> Vote2
+        Vote2 --> Result[Final Attack Type]
+    end
+
+    subgraph Actions
+        Result --> Explain[SHAP Explainer]
+        Result --> Agent[Q-Learning Agent]
+        Agent --> Action[Block / Log / Ignore]
+    end
+
+    IsAttack -- No --> Benign[Allow Packet]
 ```
 
 ---
