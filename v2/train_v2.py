@@ -224,12 +224,27 @@ print(f"   Test attacks: {len(X_test_attacks):,}")
 num_classes = len(category_encoder.classes_)
 
 dnn_categorizer = Sequential([
-    Dense(256, activation='relu', input_shape=(input_dim,)),
+    # Input Block (Wide)
+    Dense(512, activation='relu', input_shape=(input_dim,)),
     BatchNormalization(),
     Dropout(0.4),
-    Dense(128, activation='relu'),
+    
+    # Deep Block 1
+    Dense(256, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.35),
+    
+    # Deep Block 2 (Added Depth)
+    Dense(256, activation='relu'),
     BatchNormalization(),
     Dropout(0.3),
+
+    # Feature Compression Block
+    Dense(128, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.25),
+    
+    # Classification Head
     Dense(64, activation='relu'),
     Dropout(0.2),
     Dense(num_classes, activation='softmax')
@@ -252,15 +267,65 @@ history_cat = dnn_categorizer.fit(
     verbose=1
 )
 
-# Evaluate categorizer
-y_pred_cat = dnn_categorizer.predict(X_test_attacks, verbose=0).argmax(axis=1)
-cat_accuracy = accuracy_score(y_test_cat, y_pred_cat)
+# ============================================================
+# TRAIN XGBOOST CATEGORIZER (New for v2.1)
+# ============================================================
+print("\n" + "-" * 50)
+print("   Training XGBoost Categorizer (Ensemble Component)")
+print("-" * 50)
 
-print(f"\n   📊 Categorizer Results:")
+xgb_categorizer = XGBClassifier(
+    n_estimators=200,
+    max_depth=10,
+    learning_rate=0.05,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    objective='multi:softprob',
+    num_class=num_classes,
+    eval_metric='mlogloss',
+    random_state=42,
+    n_jobs=-1,
+    verbosity=1
+)
+
+print("   🚀 Training XGBoost Categorizer...")
+# We use sample_weight manually since XGBoost handles it better than class_weight param
+sample_weights = [class_weights['category'][y] for y in y_train_cat]
+
+xgb_categorizer.fit(
+    X_train_attacks, y_train_cat,
+    sample_weight=sample_weights,
+    eval_set=[(X_test_attacks, y_test_cat)],
+    verbose=True
+)
+
+# Evaluate XGBoost Categorizer
+y_pred_xgb_cat = xgb_categorizer.predict(X_test_attacks)
+xgb_cat_acc = accuracy_score(y_test_cat, y_pred_xgb_cat)
+print(f"   📊 XGBoost Categorizer Accuracy: {xgb_cat_acc*100:.2f}%")
+
+# Save XGBoost Categorizer
+joblib.dump(xgb_categorizer, os.path.join(MODELS_DIR, 'dtra_xgb_categorizer.pkl'))
+print(f"   ✅ Saved: models/dtra_xgb_categorizer.pkl")
+
+# ============================================================
+# EVALUATE STAGE 2 ENSEMBLE
+# ============================================================
+print("\n   🔍 Evaluating Stage 2 Ensemble (DNN + XGBoost)...")
+y_prob_dnn_cat = dnn_categorizer.predict(X_test_attacks, verbose=0)
+y_prob_xgb_cat = xgb_categorizer.predict_proba(X_test_attacks)
+
+# Average probabilities
+ensemble_prob_cat = (y_prob_dnn_cat + y_prob_xgb_cat) / 2
+y_pred_ensemble_cat = np.argmax(ensemble_prob_cat, axis=1)
+
+cat_accuracy = accuracy_score(y_test_cat, y_pred_ensemble_cat)
+
+print(f"\n   📊 ENSEMBLE Categorizer Results:")
 print(f"      Accuracy: {cat_accuracy*100:.2f}%")
 
-print("\n   📋 Classification Report (Categories):")
-print(classification_report(y_test_cat, y_pred_cat, target_names=category_encoder.classes_))
+print("\n   📋 Classification Report (Stage 2 Ensemble):")
+print(classification_report(y_test_cat, y_pred_ensemble_cat, target_names=category_encoder.classes_))
 
 # Save categorizer
 dnn_categorizer.save(os.path.join(MODELS_DIR, 'dtra_categorizer.h5'))
