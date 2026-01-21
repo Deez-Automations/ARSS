@@ -35,7 +35,7 @@ graph LR
     B -- Stage 1: Detection --> C{Is Attack?}
     C -- No --> D[Allow Packet]
     C -- Yes --> E[Stage 2: Classification]
-    E --> F[Explainable AI (SHAP)]
+    E --> F["Explainable AI (SHAP)"]
     E --> G[Q-Learning Agent Action]
     G --> H[Results Cache]
     H -- Poll /api/recent --> I[SOC Dashboard]
