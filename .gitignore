@@ -13,9 +13,9 @@ COMBINED_CICIDS2017.csv
 uploads/
 training_checkpoints/
 
-# OS generated
+# OS genera# System
 .DS_Store
 Thumbs.db
 
-# Documentation (Local Only)
-docs/
+# Documentation (Local Only — uncomment to exclude)
+# docs/
