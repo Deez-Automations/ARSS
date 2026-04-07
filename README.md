@@ -18,6 +18,27 @@ ARSS doesn't try to replace the analyst. It protects their attention.
 
 ---
 
+## ❓ Why ARSS — Hasn't This Been Solved?
+
+The market has solved **detection**. Firewalls block. IDS flags. SIEM aggregates. Tools like CrowdStrike, Palo Alto XSOAR, and Splunk SOAR even automate responses.
+
+**But nobody has solved trust.**
+
+SOC analysts routinely override or ignore automated decisions because they can't see the reasoning behind them. A system that says "Blocked" with no explanation doesn't reduce burnout — it creates a different kind of anxiety. Analysts can't trust what they can't understand, and what they can't trust, they don't adopt.
+
+| What The Market Solved | What Remains Unsolved |
+|------------------------|----------------------|
+| Detecting threats | Explaining *why* something was flagged |
+| Automating responses | Justifying *why* that response was chosen |
+| Aggregating alerts | Telling analysts what it means in plain English |
+| Blocking at scale | Building analyst trust in autonomous decisions |
+
+ARSS is not another detection engine. It's an **explainable, trustworthy triage agent** — one that shows its reasoning at every step, speaks to analysts in plain English, and grounds every decision in the MITRE ATT&CK framework that security teams already understand.
+
+> "The tools exist. The adoption doesn't. The missing piece is trust."
+
+---
+
 ## 🏗️ Where ARSS Sits
 
 ```
