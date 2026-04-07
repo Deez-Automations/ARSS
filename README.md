@@ -35,43 +35,75 @@ ARSS receives alerts that have already passed every upstream filter. Its job is 
 
 ## 🧠 System Architecture
 
-```
-Network Flow (71 features)
-        ↓
-┌─────────────────────────────────────┐
-│  Stage 1: Binary Detection          │
-│  XGBoost + DNN Ensemble             │
-│  → Is this an attack?               │
-└─────────────────────────────────────┘
-        ↓ (if attack)
-┌─────────────────────────────────────┐
-│  Stage 2: Attack Categorization     │
-│  XGBoost + DNN Ensemble             │
-│  → What kind? (7 categories)        │
-└─────────────────────────────────────┘
-        ↓
-┌─────────────────────────────────────┐
-│  SHAP Explainability                │
-│  → Why was this flagged?            │
-└─────────────────────────────────────┘
-        ↓
-┌─────────────────────────────────────┐
-│  RL Response Agent                  │
-│  State: [danger_score,              │
-│          attack_category,           │
-│          confidence]                │
-│  Reward: MITRE ATT&CK grounded      │
-│  → Ignore / Log / Block / Isolate   │
-└─────────────────────────────────────┘
-        ↓
-┌─────────────────────────────────────┐
-│  Cognitive Semantic Layer (Planned) │
-│  LLM generates Incident Narrative   │
-│  → Plain-English briefing for       │
-│     the analyst                     │
-└─────────────────────────────────────┘
-        ↓
-   SOC Dashboard
+```mermaid
+flowchart TD
+    INPUT(["`**Network Flow**
+    71 Features`"])
+
+    INPUT --> XGB1 & DNN1
+
+    subgraph S1 ["⚡ Stage 1 — Binary Detection"]
+        XGB1[XGBoost Classifier]
+        DNN1[Deep Neural Network]
+        VOTE1((Soft Vote))
+        GATE{Is Attack?}
+        XGB1 & DNN1 --> VOTE1 --> GATE
+    end
+
+    GATE -->|No| BENIGN(["`✅ **BENIGN**
+    Auto-Allow`"])
+
+    GATE -->|Yes| XGB2 & DNN2
+
+    subgraph S2 ["🔬 Stage 2 — Attack Categorization"]
+        XGB2[XGBoost Categorizer]
+        DNN2[Deep Neural Network]
+        VOTE2((Ensemble Avg))
+        CAT["`Attack Type
+        + Confidence Score`"]
+        XGB2 & DNN2 --> VOTE2 --> CAT
+    end
+
+    CAT --> SHAP & STATE
+
+    subgraph XAI ["💡 Explainability — SHAP"]
+        SHAP["`Top 5 Feature Contributors
+        per Packet`"]
+    end
+
+    subgraph RL ["🤖 RL Response Agent"]
+        STATE["`**State Vector**
+        danger_score
+        attack_category
+        confidence`"]
+        DQN["`**DQN Policy**
+        Reward: MITRE ATT&CK
+        Severity Weights`"]
+        STATE --> DQN
+    end
+
+    DQN --> IGNORE & LOG & BLOCK & ISOLATE
+
+    IGNORE([Ignore])
+    LOG([Log])
+    BLOCK([🔴 Block])
+    ISOLATE([🚨 Isolate])
+
+    SHAP & DQN --> LLM
+
+    subgraph CSL ["🧠 Cognitive Semantic Layer"]
+        LLM["`**LLM — Gemini**
+        Tactical Incident Narrative`"]
+    end
+
+    LLM --> DASH(["`📊 **SOC Dashboard**
+    Human Analyst`"])
+
+    style S1 fill:#1a1a2e,stroke:#4a90d9,color:#fff
+    style S2 fill:#1a1a2e,stroke:#7b2d8b,color:#fff
+    style XAI fill:#1a1a2e,stroke:#f0a500,color:#fff
+    style RL  fill:#1a1a2e,stroke:#e94560,color:#fff
+    style CSL fill:#1a1a2e,stroke:#00b4d8,color:#fff
 ```
 
 ---
