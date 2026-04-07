@@ -578,7 +578,26 @@ The deployable artifact is a **lightweight trained RL policy** that plugs into a
 
 ---
 
+### The Market Gap Clarity
+
+Key question raised: if this problem is real, why hasn't the market solved it?
+
+Answer: **The market solved detection. Nobody solved trust.**
+
+CrowdStrike, Palo Alto XSOAR, Splunk SOAR — they all automate responses. But analysts routinely override them because they can't see the reasoning. A system that says "Blocked" with no explanation doesn't reduce burnout, it creates a different kind of anxiety. Analysts don't adopt what they don't trust.
+
+| What Market Solved | What Remains Unsolved |
+|--------------------|-----------------------|
+| Detecting threats | Explaining why something was flagged |
+| Automating responses | Justifying why that response was chosen |
+| Aggregating alerts | Plain-English briefings for analysts |
+| Blocking at scale | Building analyst trust in autonomous decisions |
+
+ARSS fills the trust gap — explainable, MITRE-grounded, plain-English triage. Added a **Why ARSS** section to the README capturing this positioning.
+
+---
+
 *Journal updated: April 8, 2026*
 *Covers: Summer 2025 → April 8, 2026*
 
-> **The Bottom Line:** ARSS is the right name for what this actually is. Stage 1 and 2 are scaffolding — they train the RL, then step aside. The real product is the decision agent. Lightweight, fast, SIEM-pluggable. Today we got full clarity on what we're building and why. Next session: papers.
+> **The Bottom Line:** ARSS is the right name for what this actually is. Stage 1 and 2 are scaffolding — they train the RL, then step aside. The real product is the decision agent. Lightweight, fast, SIEM-pluggable, and explainable. The market solved detection. We're solving trust. Next session: papers.
