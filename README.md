@@ -1,143 +1,172 @@
-# 🛡️ DTRA - Dynamic Threat Response Agent
+# 🛡️ ARSS — Autonomous Response System for SOC
 
-![Status](https://img.shields.io/badge/Status-Operational-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Research%20Phase-blue?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/AI-TensorFlow%20%2B%20XGBoost-orange?style=for-the-badge)
 ![Flask](https://img.shields.io/badge/Backend-Flask-lightgrey?style=for-the-badge&logo=flask)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-> **Next-Gen AI Security Operations Center (SOC) Console for Real-Time Network Threat Detection.**
-
-DTRA (Dynamic Threat Response Agent) is an advanced cybersecurity monitoring system that uses **Hybrid AI** (Deep Learning + XGBoost) and **Reinforcement Learning** (Q-Learning) to detect, classify, and respond to network attacks in real-time.
+> **Autonomous alert triage system that sits between the SIEM and the human SOC analyst — reducing burnout by auto-handling the noise and surfacing only what matters.**
 
 ---
 
-## 🚀 Key Features
+## 🎯 The Problem
 
-*   **🧠 Hybrid AI Engine (v2):** A state-of-the-art **Two-Stage** pipeline:
-    *   **Stage 1 (Binary):** Ensemble of XGBoost + Random Forest for ultra-fast "Attack/Benign" detection (99.8% Accuracy).
-    *   **Stage 2 (Categorical):** Deep Neural Network (DNN) to classify specific attack families (DoS, DDoS, Web, Brute Force).
-*   **🚦 Live Traffic Analysis:** Support for real-time traffic streaming via API, capable of handling high-velocity packet flows.
-*   **💡 Explainable AI (XAI):** Integrated **SHAP** (SHapley Additive exPlanations) to tell you *why* a packet was blocked (e.g., "High Flow Duration + TCP Syn Flag").
-*   **📊 Premium SOC Dashboard:** A dark-mode, cinematic web console featuring:
-    *   **Live Attack Stream:** Real-time table of incoming threats.
-    *   **Threat Severity Dist:** Visual breakdown of Critical vs. Benign traffic.
-    *   **Interactive Charts:** Dynamic Chart.js visualizations.
-*   **⚡ High-Performance:** Flask-based backend capable of caching results and serving them instantly to the UI.
+SOC analysts face thousands of alerts daily. Most are false positives. The result is alert fatigue — analysts burn out, real threats get missed, and organizations get breached not because the tools failed, but because the humans behind them did.
+
+ARSS doesn't try to replace the analyst. It protects their attention.
 
 ---
 
-## 🏛️ System Architecture
+## 🏗️ Where ARSS Sits
 
-```mermaid
-graph TD
-    subgraph S1 [Stage 1: The Gatekeeper]
-        Input[Packet 71 Features] --> XGB1[XGBoost Binary]
-        Input --> DNN1[DNN Binary]
-        XGB1 -- Prob A --> Vote1((Soft Vote))
-        DNN1 -- Prob B --> Vote1
-        Vote1 -- Score > 0.3 --> IsAttack{Is Attack?}
-    end
+```
+Raw Traffic
+→ Firewall
+→ IDS/IPS  (Snort, Suricata — signatures, pattern matching)
+→ SIEM     (alert aggregation)
+→ [ARSS]   ← sits here
+→ Human SOC Analyst
+```
 
-    subgraph S2 [Stage 2: The Expert Ensemble]
-        IsAttack -- Yes --> XGB2[XGBoost Categorizer]
-        IsAttack -- Yes --> DNN2[Deep DNN Categorizer]
-        XGB2 -- Probs --> Vote2((Ensemble Avg))
-        DNN2 -- Probs --> Vote2
-        Vote2 --> Result[Final Attack Type]
-    end
+ARSS receives alerts that have already passed every upstream filter. Its job is triage — auto-handle what's obvious, escalate only what genuinely needs human judgment.
 
-    subgraph Actions
-        Result --> Explain[SHAP Explainer]
-        Result --> Agent[Q-Learning Agent]
-        Agent --> Action[Block / Log / Ignore]
-    end
+---
 
-    IsAttack -- No --> Benign[Allow Packet]
+## 🧠 System Architecture
+
+```
+Network Flow (71 features)
+        ↓
+┌─────────────────────────────────────┐
+│  Stage 1: Binary Detection          │
+│  XGBoost + DNN Ensemble             │
+│  → Is this an attack?               │
+└─────────────────────────────────────┘
+        ↓ (if attack)
+┌─────────────────────────────────────┐
+│  Stage 2: Attack Categorization     │
+│  XGBoost + DNN Ensemble             │
+│  → What kind? (7 categories)        │
+└─────────────────────────────────────┘
+        ↓
+┌─────────────────────────────────────┐
+│  SHAP Explainability                │
+│  → Why was this flagged?            │
+└─────────────────────────────────────┘
+        ↓
+┌─────────────────────────────────────┐
+│  RL Response Agent                  │
+│  State: [danger_score,              │
+│          attack_category,           │
+│          confidence]                │
+│  Reward: MITRE ATT&CK grounded      │
+│  → Ignore / Log / Block / Isolate   │
+└─────────────────────────────────────┘
+        ↓
+┌─────────────────────────────────────┐
+│  Cognitive Semantic Layer (Planned) │
+│  LLM generates Incident Narrative   │
+│  → Plain-English briefing for       │
+│     the analyst                     │
+└─────────────────────────────────────┘
+        ↓
+   SOC Dashboard
 ```
 
 ---
 
-## 📂 Project Structure
+## 🔬 Research Contributions
 
-The project is organized into two major versions:
+1. **Category-Conditioned RL State Space** — Agent sees attack semantics (type + confidence), not just a risk score. A MITM at 70% confidence is treated differently from a Recon scan at 70%.
 
-### **v2/ - DTRA Next-Gen (Recommended)**
-The upgraded **Two-Stage Hybrid Architecture** with Live Analysis.
+2. **MITRE ATT&CK Grounded Reward Function** — Response policy is trained using severity weights derived from the MITRE ATT&CK framework, eliminating hand-crafted heuristics.
 
-```bash
-DTRA/v2/
-├── server/             # Advanced Backend
-│   ├── api.py          # Multi-stage API logic with /api/recent caching
-│   └── config.py       # Configuration for 71-feature vector
-├── ui/                 # Next-Gen Dashboard
-│   └── soc_dashboard.html  # Standalone Premium Dashboard
-├── models/             # Trained AI Models
-│   ├── dtra_xgb_binary.pkl # Stage 1 Model
-│   └── dtra_categorizer.h5 # Stage 2 Model
-├── replay_traffic.py   # 🚦 Live Traffic Generator Script
-└── train_v2.py         # Advanced training pipeline
-```
+3. **Cognitive Semantic Layer** — LLM translates SHAP output + RL decision into plain-English incident narratives, reducing cognitive load for junior analysts.
 
-### **v1/ - Classic DTRA**
-The original single-stage binary classification system (Legacy).
+4. **Evaluated on CIC-IIoT 2025** — One of the first evaluations of this pipeline on the most recent IIoT security benchmark.
 
 ---
 
-## 🛠️ Installation & Quick Start
+## 📊 Current Results (v2 Baseline)
 
-### Prerequisites
-- Python 3.8+
-- Git
+| Stage | Model | Metric | Result |
+|-------|-------|--------|--------|
+| Stage 1 | XGBoost + DNN Ensemble | Recall | 92.34% |
+| Stage 2 | XGBoost + DNN Ensemble | Accuracy | 92.83% |
+| Dataset | CIC-IIoT 2025 | Samples | 685K |
 
-### 1. Clone & Install
-```bash
-git clone https://github.com/StartLivin-DEEZ/DTRA.git
-cd DTRA
-pip install -r requirements.txt
-```
-
-### 2. Start the Server (Terminal 1)
-This powers the AI engine and API endpoints.
-```bash
-python v2/server/api.py
-```
-> *Output:* `📡 Listening for traffic on http://127.0.0.1:5000`
-
-### 3. Start Traffic Generator (Terminal 2)
-This script simulates real-time network traffic attacks.
-```bash
-python v2/replay_traffic.py
-```
-> *Output:* `📤 Sent packet #1...`
-
-### 4. Launch Dashboard
-Open `v2/ui/soc_dashboard.html` in your web browser.
-1. Click **"Start Scanning"**.
-2. Watch the live attacks pour in! 🛡️
+> Note: No SMOTE used. Honest accuracy on real traffic distributions.
 
 ---
 
 ## 🔬 Tech Stack
 
-| Component | Technology | Description |
-| :--- | :--- | :--- |
-| **AI / ML** | **TensorFlow Keras** | Deep Neural Networks for categorical classification. |
-| | **XGBoost** | High-speed gradient boosting for initial detection. |
-| | **SHAP** | Model explainability and feature importance. |
-| **Backend** | **Flask (Python)** | REST API server for model serving and log management. |
-| **Frontend** | **HTML5 / CSS3** | Modern, responsive dark-mode UI. |
-| | **Chart.js** | Dynamic real-time plotting. |
-| **Data** | **CIC-IIoT-2025** | Trained on the latest IIoT security dataset. |
+| Component | Technology |
+|:----------|:-----------|
+| AI / ML | TensorFlow Keras, XGBoost |
+| Explainability | SHAP |
+| RL Agent | Q-Learning (redesign to DQN in progress) |
+| Backend | Flask (Python) |
+| Frontend | HTML5, Chart.js |
+| Dataset | CIC-IIoT 2025 |
 
 ---
 
-## 🛡️ Security & Performance
+## 📂 Project Structure
 
-*   **Duplicate Prevention:** Dashboard logic filters unique packet IDs to prevent stats inflation.
-*   **Result Caching:** Server maintains a rolling cache of recent analysis for high-performance polling.
-*   **Input Sanitization:** Robust handling of malformed JSON packets.
+```
+ARSS/
+├── v1/                  # Legacy — CICIDS2017, single-stage DNN
+├── v2/                  # Current — CIC-IIoT 2025, two-stage ensemble
+│   ├── server/          # API, detector, decider, explainer, config
+│   ├── models/          # Trained model artifacts
+│   ├── ui/              # SOC dashboard
+│   └── train_v2.py      # Training pipeline
+├── docs/                # Research documents and session journal
+└── requirements.txt
+```
 
 ---
-*Created for CS 351 Project - GIKI* 
-*© 2026 DTRA Team*
+
+## 🚀 Quick Start
+
+```bash
+git clone https://github.com/Deez-Automations/DTRA---Dynamic-Threat-Response-Agent.git
+cd DTRA
+pip install -r requirements.txt
+
+# Terminal 1 — Start API server
+python v2/server/api.py
+
+# Terminal 2 — Simulate live traffic
+python v2/replay_traffic.py
+
+# Open v2/ui/soc_dashboard.html in browser
+```
+
+---
+
+## 📅 Project Timeline
+
+| Phase | Period | Focus |
+|-------|--------|-------|
+| v1 | Summer – Dec 2025 | Baseline system, CICIDS2017, A* + Q-Learning |
+| v2 | Jan 2026 | Two-stage ensemble, CIC-IIoT 2025, live dashboard |
+| Research | Feb – Apr 2026 | RL redesign direction, literature review |
+| Proposal Defense | ~May 2026 | Title + architecture defense |
+| Implementation | Jun – Dec 2026 | DQN agent, LLM layer, experiments |
+| FYP Defense | Jan 2027 | Final paper + defense |
+
+---
+
+## 👥 Team
+
+| Name | ID |
+|------|----|
+| Daniyal | 2023406 |
+| Haider | 2023416 |
+| Daud | 2023677 |
+
+*GIKI — CS 351 AI Lab / Senior Design Project*
+*© 2026 ARSS Team*
