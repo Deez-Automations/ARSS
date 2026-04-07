@@ -161,15 +161,39 @@ On the CIC-IIoT 2025 dataset — the most recent IIoT benchmark with very few pu
 
 ---
 
-## What Stays The Same
+## The Two-Phase Architecture Realization
 
-- Stage 1 ensemble (XGBoost + DNN binary)
-- Stage 2 categorizer (XGBoost + DNN, 7 classes)
-- SHAP explainability layer
-- Flask API and SOC dashboard
-- CIC-IIoT 2025 dataset
+### Why Stage 1 and Stage 2 Exist
 
-Only the RL decision layer is being redesigned. The architecture above it doesn't change.
+Modern IDS/IPS (Snort, Suricata, Zeek) are already good at detecting and blocking. In a real SOC, the SIEM already hands you labeled, scored alerts with attack type and confidence. So why do we have a detection pipeline?
+
+**Because we're in an academic setting with a raw dataset.** Stage 1 and Stage 2 are not the product — they are a training utility. They exist to enrich the raw CIC-IIoT 2025 data into the state vector the RL agent needs to train on.
+
+### Training Phase vs Deployment Phase
+
+**Training Phase:**
+```
+Raw Dataset (CIC-IIoT 2025)
+→ Stage 1 (Binary Detection)
+→ Stage 2 (Attack Categorization)
+→ State Vector [danger_score, attack_category, confidence]
+→ RL Agent trains on enriched data
+```
+
+**Deployment Phase:**
+```
+SIEM Alert (already labeled, scored, typed)
+→ State Vector [danger_score, attack_category, confidence]
+→ RL Agent → Action
+```
+
+Stages 1 and 2 are gone in production. The SIEM provides the state directly. The deployable artifact is a lightweight trained RL policy — not a heavy ML inference pipeline.
+
+### Why This Is A Stronger Story
+
+The real product is a **small, fast, explainable decision agent** that plugs into any SIEM via API. No bulky detection engine. No retraining on every new network. Just a trained policy making triage decisions in milliseconds on top of the SOC's existing infrastructure.
+
+That's production-realistic. That's what an actual SOC would deploy.
 
 ---
 
@@ -191,5 +215,6 @@ Only the RL decision layer is being redesigned. The architecture above it doesn'
 ---
 
 *Document created: April 7, 2026*
-*Authors: Daniyal (2023406) + Haider (2023416)*
+*Authors: Daniyal (2023406) + Haider (2023416) + Daud (2023677)*
 *Course: CS 351 AI Lab — FYP Research Direction*
+

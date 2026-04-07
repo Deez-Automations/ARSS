@@ -545,22 +545,40 @@ Moved to **Future Work.**
 
 ---
 
-### Documents Created This Session
-- `docs/DTRA_RL_Redesign_Thinking.md` — full write-up of the redesign rationale, state space, reward function, and contribution statement
+### The Training vs Deployment Realization
+
+A key question came up: modern IDS/IPS already detect, classify, and block — so why do we have Stage 1 and Stage 2?
+
+Answer: **they are a training utility, not the product.**
+
+In real deployment, the SIEM already provides labeled, scored, typed alerts. You skip detection entirely and feed straight into the RL agent. Stage 1 and 2 only exist because we're working with a raw dataset (CIC-IIoT 2025) and need them to generate the enriched state vector the RL trains on.
+
+```
+TRAINING:    Raw Dataset → Stage 1 → Stage 2 → RL trains on enriched state
+DEPLOYMENT:  SIEM Alert  → RL Agent → Action
+```
+
+The deployable artifact is a **lightweight trained RL policy** that plugs into any SIEM via API. No heavy detection engine. No re-inference. Just fast, explainable triage decisions on top of the SOC's existing infrastructure. That's the real product.
+
+---
+
+### Documents Created / Updated This Session
+- `docs/DTRA_RL_Redesign_Thinking.md` — full write-up of redesign rationale, state space, reward function, training vs deployment split, and contribution statement
+- `README.md` — rebranded to ARSS, updated architecture with Mermaid UML diagram
+- GitHub repo renamed to `ARSS`
 
 ---
 
 ### What's Next
 - [ ] Finalize MITRE ATT&CK severity weights for all 7 attack categories
-- [ ] Decide: DQN or expanded Q-table? (key architectural decision pending)
-- [ ] Find research papers backing the category-conditioned state space approach
+- [ ] Decide: DQN or expanded Q-table?
+- [ ] Find research papers backing category-conditioned state space
 - [ ] Find research papers backing MITRE-grounded reward shaping
-- [ ] Design the LLM narrative prompt template (Cognitive Semantic Layer)
-- [ ] Update project name across README, docs, and repo
+- [ ] Design LLM narrative prompt template (Cognitive Semantic Layer)
 
 ---
 
 *Journal updated: April 8, 2026*
 *Covers: Summer 2025 → April 8, 2026*
 
-> **The Bottom Line:** ARSS is the right name for what this actually is. The detection was always the easy part — we solved that in v2. The hard part, the part that matters, is the decision layer. Today we identified exactly what's wrong with it and exactly how to fix it. The RL redesign (category-conditioned state + ATT&CK-grounded reward) plus the LLM narrative layer are the two contributions that make this defensible. Everything else stays.
+> **The Bottom Line:** ARSS is the right name for what this actually is. Stage 1 and 2 are scaffolding — they train the RL, then step aside. The real product is the decision agent. Lightweight, fast, SIEM-pluggable. Today we got full clarity on what we're building and why. Next session: papers.
