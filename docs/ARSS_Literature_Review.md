@@ -5,6 +5,134 @@
 
 ---
 
+## How to Read These Papers — A Practical Guide
+
+> This guide is for someone who understands ARSS well but hasn't done academic paper reading before. Follow this exactly for each paper.
+
+---
+
+### Step 1: Don't Read It Fully (Yet)
+
+First pass should take 10-15 minutes max. Do this in order:
+
+1. **Read the Abstract** — What problem are they solving? What's their claim?
+2. **Read the Introduction (last 2 paragraphs)** — This is where they state their contribution clearly.
+3. **Read the Conclusion** — What did they prove? What are their limitations?
+4. **Skim the figures and tables** — Results tables, architecture diagrams. What numbers did they get?
+
+After this you'll know: is this paper directly relevant to ARSS or just background? If it's background, stop here. If it's directly relevant, go to Step 2.
+
+---
+
+### Step 2: Read With ARSS in Mind (30-40 minutes)
+
+Now read the full paper but ask these questions as you go:
+
+**About their problem:**
+- What exact problem are they solving?
+- Is it detection, prioritization, or response? (This tells you which layer they're at)
+- Who is their system built for — researchers or real SOCs?
+
+**About their RL design (the most important part for us):**
+- What is their **state space**? (What does the RL agent see?)
+- What is their **action space**? (What can it do?)
+- What is their **reward function**? (What is it optimizing for?)
+- Is the reward grounded in real threat intelligence or is it abstract/invented?
+
+**About their results:**
+- What dataset did they use? Is it the same as ours (CIC-IIoT 2025)?
+- What metrics did they report? (Accuracy, recall, FP reduction, etc.)
+- Did they compare against a baseline? What baseline?
+
+**About their limitations (gold mine for your gap statement):**
+- What do they admit they didn't solve?
+- What future work do they suggest?
+- This is where ARSS comes in — their limitation is your contribution.
+
+---
+
+### Step 3: Fill This Template (For Every Paper)
+
+Copy this and fill it in after reading:
+
+```
+## Paper: [Title]
+**Authors:**
+**Year:**
+**Venue:**
+**DOI:**
+
+### Their Problem
+What exact problem do they solve?
+
+### Their RL Design
+- State space:
+- Action space:
+- Reward function:
+- Is reward grounded in real threat intel? Yes / No
+
+### Their Results
+- Dataset used:
+- Key metric:
+- Compared against:
+
+### Their Limitations (What They Admit)
+-
+-
+
+### How It Connects to ARSS
+- Do we cite this as related work or as the gap we fill?
+- What specific sentence in our paper will reference this?
+
+### ARSS Advantage Over This Paper
+- What does ARSS do that this paper doesn't?
+```
+
+---
+
+### Step 4: How to Get the PDF
+
+Most of these papers are behind paywalls. Options:
+
+1. **GIKI Library Portal** — Log in with your university credentials and access IEEE Xplore + Elsevier
+2. **Sci-Hub** — Search by DOI. Paste the DOI directly: `sci-hub.se/[DOI]`
+3. **Google Scholar** — Search the title, click "All versions" — sometimes a free PDF link appears
+4. **ResearchGate** — Search the title, request full-text from the authors (they usually share within 24 hours)
+5. **arXiv** — Some IEEE papers have a free arXiv version (check the arXiv links in this document)
+
+---
+
+### Step 5: What to Do With Your Notes
+
+After reading each paper, do two things:
+
+1. **Update the template above** with your filled notes
+2. **Write one sentence** that explains how this paper will appear in your literature review
+
+Example sentence:
+> "Chavali et al. (2024) propose TD3-AP, an off-policy actor-critic RL agent for IDS alert prioritization, but ground their reward in abstract adversarial game costs rather than real-world threat semantics — a limitation ARSS addresses through MITRE ATT&CK severity-weighted reward shaping."
+
+That sentence is literally copy-paste ready for your proposal. Do this for every paper and your literature review writes itself.
+
+---
+
+### Reading Order (Follow This Exactly)
+
+| Order | Paper | Time Needed | Why This Order |
+|-------|-------|-------------|----------------|
+| 1st | Jalalvand et al. 2025 (ACM CSUR — Alert Fatigue Survey) | 1 hour | Sets the whole problem context. Read this first so everything else makes sense. |
+| 2nd | Jalalvand et al. 2024 (ACM CSUR — Prioritization Survey) | 1 hour | Shows the solution landscape. You'll see exactly where ARSS fits. |
+| 3rd | Chavali et al. 2024 (C&S — TD3-AP) | 45 mins | Your strongest related work. Understand it deeply. |
+| 4th | Wang et al. 2024 (C&S — AlertPro) | 45 mins | Closest prior art. Know it better than the authors. |
+| 5th | Chavali et al. 2022 (IEEE CEC — SAC-AP) | 30 mins | First in their series. Read after TD3-AP so you understand the evolution. |
+| 6th | Huang & Zhu 2022 (RADAMS) | 30 mins | Original RL triage work. Shows where the field started. |
+| 7th | Chhetri et al. 2024 (ACM TOIT — A2C) | 30 mins | Theoretical backing for ARSS philosophy. |
+| 8th | Huang et al. 2024 (IEEE TNSM — MITREtrieval) | 30 mins | Supports MITRE grounding. Read last as it's supporting, not core. |
+
+**Total estimated time: 6-7 hours spread across multiple days. Don't rush it.**
+
+---
+
 ## The Gap Statement
 
 > "Prior RL work (Chavali et al. 2022-2025, Wang et al. 2024) frames alert prioritization as an adversarial game with synthetic reward functions decoupled from real-world threat semantics. No published peer-reviewed work grounds the RL reward directly in MITRE ATT&CK TTP severity — the closest work (Huang et al. 2024) extracts TTPs without closing the feedback loop to a triage policy. ARSS bridges this gap by proposing a category-conditioned RL agent with MITRE ATT&CK grounded rewards operating at the SIEM triage layer with a discrete 4-action response space (Ignore/Log/Block/Isolate)."
