@@ -578,6 +578,81 @@ The deployable artifact is a **lightweight trained RL policy** that plugs into a
 
 ---
 
+## 📁 SESSION: April 14, 2026
+**Focus:** Literature review — commercial landscape + academic research on RL for SOC alert triage
+
+---
+
+### Literature Review: Commercial Landscape
+
+Conducted a full sweep of commercial SOC/SOAR platforms (2022-2026).
+
+**Finding: Nobody uses RL for alert triage. Confirmed.**
+
+| Platform | Triage Approach |
+|----------|----------------|
+| Splunk SOAR | Rule-based playbooks |
+| Palo Alto XSOAR | Rules + ML scoring |
+| Microsoft Sentinel | Graph-based ML (Fusion) |
+| CrowdStrike Charlotte AI | Supervised imitation learning + LLM |
+| IBM QRadar | Rules + NLP enrichment |
+| Dropzone, Exaforce, Prophet | LLM agents |
+
+The entire 2024-2026 "Agentic SOC" wave converged on LLM multi-agent systems trained via supervised imitation learning — not RL. CrowdStrike Charlotte AI is trained on millions of real analyst triage decisions but it replicates past decisions, it can't discover better policies. RL as a triage decision mechanism is completely unclaimed in commercial deployments.
+
+Gartner's 2025 capability list for AI SOC Agents does not mention RL at all. That's a citation.
+
+---
+
+### Literature Review: Academic Research (2022-2026)
+
+Found 16 papers in the RL-for-cyber space. Key findings:
+
+**Papers closest to ARSS:**
+
+| Paper | Year | What They Do | Gap vs ARSS |
+|-------|------|-------------|-------------|
+| RADAMS (Huang & Zhu) | 2022 | RL to de-emphasize noisy alerts, models analyst attention | Doesn't take response actions — just dims alerts |
+| AlertPro | 2024 | RL for context-aware alert prioritization | Ranking only, no Ignore/Log/Block/Isolate action space |
+| L2DHF (Jalalvand et al.) | 2025 | RL to decide defer vs auto-close | Binary only, not multi-action response |
+| SAC-AP / TD3-AP / KNAP | 2022-2024 | Actor-critic RL for IDS alert ranking | Prioritization only, no autonomous response |
+| AACT (Secureworks) | 2025 | Supervised ML triage — 61% alert reduction in real SOC | Not RL, proves the problem is solvable |
+| CORTEX | 2025 | LLM multi-agent triage | Not RL, expensive, non-deterministic |
+
+**Key reference found:**
+Jalalvand et al. (2025) ACM Computing Surveys — "Alert Fatigue in SOCs: Research Challenges" explicitly flags RL at the triage layer as underexplored. This is the authoritative citation for our problem statement.
+
+---
+
+### The Two Confirmed Gaps
+
+**Gap 1 — Action space at SIEM layer:**
+Every RL paper either ranks alerts or makes a binary defer/auto decision. Nobody has built an RL agent with a discrete 4-action response space (Ignore/Log/Block/Isolate) operating at the SIEM layer. ARSS is first.
+
+**Gap 2 — MITRE ATT&CK in reward function:**
+Zero papers found encoding MITRE ATT&CK severity weights into an RL reward function. Not in academic literature, not in commercial implementations. Completely unclaimed.
+
+---
+
+### 5 Must-Read Papers (Priority Order)
+
+1. **Jalalvand et al. (2025)** — ACM Computing Surveys — "Alert Fatigue in SOCs" — foundational problem statement citation
+2. **RADAMS — Huang & Zhu (2022)** — Computers & Security — closest prior work, must position against it
+3. **AACT — Secureworks (2025)** — proves triage layer problem is real and ML-solvable, argue why RL is better
+4. **L2DHF — Jalalvand et al. (2025)** — arXiv — HITL deferral RL approach
+5. **AlertPro (2024)** — Computers & Security — RL for prioritization, distinguish from response
+
+---
+
+### What's Next
+- [ ] Find IEEE/ACM published papers (in progress — search running)
+- [ ] Read the 5 priority papers above
+- [ ] Write formal literature review section for proposal
+- [ ] Finalize MITRE ATT&CK severity weights
+- [ ] Decide DQN vs expanded Q-table
+
+---
+
 ### The Market Gap Clarity
 
 Key question raised: if this problem is real, why hasn't the market solved it?
