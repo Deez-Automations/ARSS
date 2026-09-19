@@ -33,7 +33,8 @@ All four Chavali papers model alert prioritization as an adversarial Markov game
 Across the entire surveyed literature (2022–2026), zero peer-reviewed papers ground RL reward in the MITRE ATT&CK framework. The closest is MITREtrieval (Huang et al. 2024), which extracts TTPs from threat reports using BERT — but doesn't close the feedback loop to a triage policy or reward function.
 
 **Source:**
-- Huang Y.T., Vaitheeshwari R., Chen M.C., Lin Y.D., Hwang R.H. et al. — "MITREtrieval: Fusing BERT with MITRE ATT&CK Ontology for TTP Extraction" — *IEEE Transactions on Network and Service Management*, Vol. 21, No. 4, 2024. DOI: 10.1109/TNSM.2024.3401200
+- Huang Y.T., Vaitheeshwari R., Chen M.C., Lin Y.D., Hwang R.H. et al. — "MITREtrieval: Retrieving MITRE Techniques From Unstructured Threat Reports by Fusion of Deep Learning and Ontology" — *IEEE Transactions on Network and Service Management*, Vol. 21, No. 4, pp. 4871-4887, 2024. DOI: 10.1109/TNSM.2024.3401200
+- **Verified:** 2026-09-19 — title corrected. Previously recorded as "Fusing BERT with MITRE ATT&CK Ontology for TTP Extraction," a paraphrase not matching the actual published title. DOI and IEEE document ID confirm it is the same paper; only the title string was wrong.
 
 **Gap confirmed:** MITRE ATT&CK + RL reward = zero papers.
 
@@ -71,7 +72,7 @@ All prior RL work outputs a priority score or ranking. None implement a discrete
 - AlertPro: re-ranked alert list
 - RADAMS: alert de-emphasis weight (no response action taken)
 
-RADAMS is notable because it does address the RL-at-triage-layer concept, but for attention management (reducing cognitive load by de-emphasizing low-value alerts), not for taking automated response actions.
+RADAMS is notable because it does address the RL-at-triage-layer concept, but for attention management (reducing cognitive load by de-emphasizing low-value alerts), not for taking automated response actions. *(Nuance added 2026-07-19, full PDF read: RADAMS's domain is specifically Industrial Control Systems, its output action is an integer m ∈ {0,1,2,3} controlling how many alerts to de-emphasize -- not a response action -- and it already differentiates cost by criticality and source layer via a 4-tier dollar table. It does not, however, ground that cost table in MITRE ATT&CK, and it uses tabular Q-learning rather than deep RL.)*
 
 **Source:**
 - Huang L., Zhu Q. — "RADAMS: Resilient and Adaptive Alert and Attention Management Strategy Against Informational Denial-of-Service Attack" — *Computers & Security*, 2022. arXiv: 2111.03463
@@ -83,8 +84,8 @@ RADAMS is notable because it does address the RL-at-triage-layer concept, but fo
 ### Finding 7: Two systematic reviews have independently flagged this exact gap
 Two ACM Computing Surveys papers (the highest-impact venue in the field, IF 23.8) have both independently identified the CTI-grounded + RL intersection as underexplored.
 
-**Jalalvand et al. 2025 (Alert Fatigue Survey):**
-> Reports 4,484 alerts/day average; 67% ignored by overwhelmed analysts. Identifies four root causes: inadequate monitoring, improper thresholds, missing feedback loops, analyst cognitive load. Explicitly flags RL at the triage layer as underexplored.
+**Tariq et al. 2025 (Alert Fatigue Survey):** *(corrected 2026-07-19 -- this paper was previously mislabeled "Jalalvand et al. 2025" above; the Alert Fatigue Survey is by Tariq et al., not Jalalvand. Jalalvand is the author of the separate 2024 Prioritisation Survey below. The "4,484 alerts/day, 67% uninvestigated" figure was also not found anywhere in the paper on full-text verification and has been replaced with the actual reported statistics.)*
+> Reports (citing Trend Micro and IBM survey data) that 51% of SOC teams feel overwhelmed by alert volume and that analysts resolve only 49% of alerts assigned to them in a workday. Identifies four root causes: inadequate monitoring, improper thresholds, missing feedback loops, analyst cognitive load. Discusses RL applications (RADAMS, distributed RL alert reallocation) with named limitations; does not contain an explicit "RL is underexplored" statement in these words -- treat that framing as a paraphrase, not a direct quote.
 
 **Jalalvand et al. 2024 (Alert Prioritization Survey):**
 > Builds a taxonomy of prioritization methods. Identifies the CTI-criteria + RL-method intersection as the least-explored quadrant of the solution space.

@@ -147,7 +147,8 @@ That sentence is literally copy-paste ready for your proposal. Do this for every
 - **Year:** 2025
 - **DOI:** 10.1145/3723158
 - **Link:** https://dl.acm.org/doi/10.1145/3723158
-- **Summary:** Systematic review of alert fatigue through lenses of automation, augmentation, and human-AI collaboration. Identifies four root causes: inadequate monitoring, improper thresholds, missing feedback loops, analyst cognitive load. Reports 4,484 alerts/day average; 67% ignored by overwhelmed analysts. Explicitly flags RL at the triage layer as underexplored.
+- **Summary:** Systematic review of alert fatigue through lenses of automation, augmentation, and human-AI collaboration. Identifies four root causes: inadequate monitoring, improper thresholds, missing feedback loops, analyst cognitive load. Reports (citing Trend Micro and IBM survey data) that 51% of SOC teams feel overwhelmed by alert volume and that analysts resolve only 49% of alerts assigned to them in a workday. Discusses RL applications (RADAMS, distributed RL alert reallocation) with named limitations.
+- **Verified:** 2026-07-19, full PDF read, full-text search confirms no "4,484 alerts/day" or "67% uninvestigated" figure anywhere in the paper -- that stat was previously misattributed here and has been corrected to the verified figures above.
 - **How to cite:** Foundational problem statement. Use to justify why alert fatigue is unsolved and why RL is the right direction.
 
 ### P2. Alert Prioritisation in SOCs — Systematic Survey
@@ -169,7 +170,7 @@ That sentence is literally copy-paste ready for your proposal. Do this for every
 - **Year:** 2022
 - **DOI:** 10.1109/CEC55065.2022.9870423
 - **Link:** https://ieeexplore.ieee.org/document/9870423/
-- **Summary:** Models alert prioritization as an adversarial Markov game between attacker and defender. Uses Soft Actor-Critic with maximum entropy RL to optimize defender resource allocation across IDS alerts. ~16% reduction in defender loss vs DDPG baseline.
+- **Summary:** Models alert prioritization as an adversarial Markov game between attacker and defender. Uses Soft Actor-Critic with maximum entropy RL to optimize defender resource allocation across IDS alerts. Up to 30% reduction in defender's loss vs DDPG baseline (verified against abstract, 2026-07-19 -- previously misquoted here as 16%).
 - **Gap vs ARSS:** Reward is abstract "defender loss" — not grounded in MITRE ATT&CK or analyst feedback. Ranking only, no 4-action response space.
 
 ### R2. Off-Policy Actor-Critic DRL for Alert Prioritization (TD3-AP + SAC-AP Extended)
@@ -214,8 +215,9 @@ That sentence is literally copy-paste ready for your proposal. Do this for every
 - **Year:** 2022
 - **DOI:** (see arXiv 2111.03463)
 - **Link:** https://arxiv.org/abs/2111.03463
-- **Summary:** RL-based adaptive alert de-emphasis strategy against Informational DoS (alert flooding). Models analyst attention dynamics using Yerkes-Dodson and sunk cost theory. 95.89% recall, 5.86% FPR on 500K+ alerts.
-- **Gap vs ARSS:** De-emphasizes alerts to reduce cognitive load — doesn't take response actions (no Block/Isolate). No MITRE ATT&CK. Manages attention, not triage decisions.
+- **Summary:** Formally defines "Informational Denial-of-Service (IDoS)" attacks -- feint attacks that overload human operator attention to hide real attacks. Domain is specifically Industrial Control Systems (ICS), not generic SOC. Uses tabular Q-learning (not deep RL) to learn an Attention Management strategy that chooses how many alerts (m ∈ {0,1,2,3}) to make less noticeable per category label. Category label already includes a criticality dimension (low/high) and source dimension (physical/cyber), with a 4-tier dollar-cost table (feint dismissal $80, real attack in physical layer $500, real attack in cyber layer $100, incomplete response $300). Reported result: up to 20% IDoS risk reduction (a dollar-cost metric) vs default strategy -- the paper does not report recall or FPR at all.
+- **Verified:** 2026-07-19, full 15-page PDF read directly. The "95.89% recall, 5.86% FPR on 500K+ alerts" figure previously recorded here does not appear anywhere in the paper and has been removed.
+- **Gap vs ARSS:** De-emphasizes alerts to reduce cognitive load -- doesn't take response actions (no Block/Isolate), only adjusts visibility of alerts already queued for a human. Important nuance: RADAMS already differentiates cost by criticality and source layer, so "no prior work differentiates severity by category" is not accurate for this paper -- what's still true is that its cost table is not grounded in MITRE ATT&CK specifically, and its output is an attention-adjustment integer, not a discrete response action.
 
 ---
 
@@ -230,13 +232,14 @@ That sentence is literally copy-paste ready for your proposal. Do this for every
 - **Summary:** Proposes A2C (Automate-Augment-Collaborate) framework for dynamic transitions between automation modes based on alert complexity. Routine alerts → automation; novel threats → collaborative human-AI. Conceptual framework, not implemented system.
 - **How to cite:** ARSS operationalizes the A2C philosophy with a concrete RL policy. Cite as the theoretical foundation for our triage philosophy.
 
-### A2. MITREtrieval — Extracting MITRE ATT&CK Techniques from Threat Reports
+### A2. MITREtrieval: Retrieving MITRE Techniques From Unstructured Threat Reports by Fusion of Deep Learning and Ontology
 - **Authors:** Y.T. Huang, R. Vaitheeshwari, M.C. Chen, Y.D. Lin, R.H. Hwang et al.
-- **Venue:** IEEE Transactions on Network and Service Management, Vol. 21, No. 4 — **IF 5.3, Q1**
+- **Venue:** IEEE Transactions on Network and Service Management, Vol. 21, No. 4, pp. 4871-4887 — **IF 5.3, Q1**
 - **Year:** 2024
 - **DOI:** 10.1109/TNSM.2024.3401200
 - **Link:** https://ieeexplore.ieee.org/document/10539631/
 - **Summary:** Fuses BERT with MITRE ATT&CK ontology to extract TTP techniques from unstructured CTI reports. Validates that MITRE ATT&CK can be used as a structured intelligence framework in ML pipelines.
+- **Verified:** 2026-09-19 — title corrected. This entry's heading previously read "MITREtrieval — Extracting MITRE ATT&CK Techniques from Threat Reports," a paraphrase, not the published title. Confirmed same paper via matching DOI and IEEE document ID (both already correct here) against IEEE Xplore, ACM DL, and ResearchGate listings.
 - **How to cite:** Supports grounding our reward function in MITRE ATT&CK — cites the framework as ML-compatible and operationalizable.
 
 ### A3. Dynamic Alert Prioritization — HMM + Active Learning

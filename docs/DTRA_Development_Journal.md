@@ -676,3 +676,143 @@ ARSS fills the trust gap — explainable, MITRE-grounded, plain-English triage. 
 *Covers: Summer 2025 → April 8, 2026*
 
 > **The Bottom Line:** ARSS is the right name for what this actually is. Stage 1 and 2 are scaffolding — they train the RL, then step aside. The real product is the decision agent. Lightweight, fast, SIEM-pluggable, and explainable. The market solved detection. We're solving trust. Next session: papers.
+
+---
+
+## 📁 SESSION: July 19-20, 2026
+**Focus:** Session recovery, literature integrity audit, IEEE paper drafting, bibliography expansion toward genuine 35-source coverage
+
+---
+
+### Context: Session Recovery
+
+Previous Claude Code session for this project was lost. Rebuilt full context from scratch by reading every doc, the git log, and the actual v2 code — not just the docs' claims about the code. That distinction mattered: the docs describe a category-conditioned, MITRE-grounded DQN agent. The actual code (`v2/server/decider.py`, `api.py`) still runs the pre-February-pivot flat Q-learning, no trained Q-table exists, and `api.py` silently falls back to `Block if danger > 0.8 else Log`. Three months of research/planning docs, zero lines of the redesigned RL agent. This gap between "what's written" and "what's built" is now tracked explicitly rather than assumed away.
+
+### The Adopted Process: Four Phases, Ported from the CY315 Project
+
+Daniyal's CY315 (UA-SAC) project had already worked out a rigorous literature process across ~35 verified sources. Explicitly **not** reusing CY315's content or paper — only its structure, since this is separate research work. Reconstructed and adopted the same four-phase discipline:
+
+**Phase 1 — Curation (before touching a single PDF).** Audit what's already in the bibliography first: orphan citations (never cited in body text), stale recency, mislabeled entries. Then search in themed buckets, each with a distinct job in the argument — not one generic sweep. For ARSS, the buckets are: RL-theory grounding for the reward (why worst-case/scalarized reward design is principled, not invented), recent DRL applications in the exact subdomain (SOC/SIEM alert response, 2022-2026), non-RL competitors solving the same problem (supervised triage, LLM-agent triage), MITRE ATT&CK + ML/RL integration beyond MITREtrieval, category-conditioned state-space precedent, and recent surveys for context.
+
+**Phase 2 — Access.** Real PDF or verified abstract before anything is trusted — never a search-snippet summary taken at face value. Legitimate channels only: arXiv, ResearchGate request-a-copy, institutional library, direct author email. Never Sci-Hub or mirrors.
+
+**Phase 3 — Reading and notes.** One paper at a time, full read before writing the entry, same rigor for old citations as new ones. Fixed fields: citation, link, source-read status (full PDF vs. abstract-only, always flagged honestly), what it does, core mechanism, its stated limitations and future work pulled from its own text, direct comparison to ARSS, and its specific job in the argument.
+
+**Phase 4 — Cross-referencing.** Hunt each paper's own limitations/future-work language for sentences that hand you your gap. Check for contradictions against ARSS's own claims rather than let them sit unnoticed. Flag when a paper doesn't do what its citation implies.
+
+**The qualifying bar for any candidate, regardless of phase:**
+- Real first, no exceptions — verified venue, DOI, actual abstract, not a plausible-sounding summary.
+- A specific, nameable job in the argument (competitor, theory grounding, recency signal, gap-filler) — if the job can't be named, it doesn't make the cut.
+- Quality over hitting a target count. 35 is the CY315 benchmark, not a quota to pad toward.
+- No redundant duplicates — a new candidate doing the same job as an existing citation needs a genuinely different angle to also qualify.
+- Recency weighted deliberately when fixing a stale bibliography, but never recency for its own sake — still has to clear the "real job" bar.
+- Confidence tracked and disclosed per source — abstract-only vs. fully-verified-read is marked every time, never smoothed over.
+
+### What the Audit Found
+
+Applied to ARSS's existing 11-13 source bibliography (assembled before this session, most likely during an earlier AI-assisted research pass that never verified sources against primary text), the audit found a real integrity problem, not a stylistic one:
+
+- **Tariq et al. 2025** — the "4,484 alerts/day, 67% uninvestigated" statistic, repeated across the Development Journal, Literature Review, Research Findings, **and the already-signed scope document's Abstract and Problem Statement**, does not appear anywhere in the actual 38-page paper. Full-text search confirmed zero matches. Real reported figures: 51% of SOC teams overwhelmed (Trend Micro), 49% of alerts resolved in a workday (IBM).
+- **RADAMS (Huang & Zhu 2022)** — the "95.89% recall, 5.86% FPR on 500K+ alerts" figure does not exist in the paper. It doesn't even report classification metrics; its actual result is "up to 20% IDoS risk reduction," a dollar-cost metric, in an Industrial Control Systems context the existing docs had also mislabeled as generic SOC.
+- **SAC-AP (Chavali et al. 2022)** — cited as "16% reduction vs. DDPG," actual abstract says "up to 30%." Misquoted, not fabricated.
+- **A2C framework** — the title in the bibliography, "Human-AI Teaming for Alert Fatigue: An A2C Framework Approach," does not match any real paper under its cited DOI. Replaced with the verified paper that actually defines A2C by name (Tariq et al., arXiv:2401.14432).
+- **AACT** — informally attributed to "Secureworks" in the April 14 entry above; verified authors are affiliated with Sophos and Flare.
+- **Finding 7 misattribution** — the Tariq et al. alert-volume quote was headed "Jalalvand et al. 2025" in the Research Findings doc, crediting the wrong author for the wrong paper.
+
+Every one of these has been corrected in `ARSS_Literature_Review.md`, `ARSS_Research_Findings.md`, and the new `ARSS_Paper.tex`. The signed scope document itself was left untouched per direction — that correction is a separate decision involving the supervisor, not something to silently patch.
+
+### The Paper: `docs/ARSS_Paper.tex`
+
+Drafted a full IEEEtran conference-format paper, structurally mirroring CY315's paper (System Model with formal MDP math → Related Work → Proposed Methodology as three numbered layers with an algorithm block → Evaluation Plan → Conclusion). Explicitly no fabricated results — the Evaluation Plan section describes the protocol only, since the RL agent hasn't been implemented yet.
+
+Two design corrections made mid-session, both substantive, not cosmetic:
+1. **The SIEM-deployment claim was overclaimed.** The original framing — "in deployment, the SIEM supplies equivalent data directly, Stages 1-2 are not required" — doesn't survive scrutiny. A real SIEM does not natively export CIC-IIoT 2025's 71 flow-level statistical features, nor a continuous multi-class confidence score. Corrected to the honest version: Stages 1-2 move from a public-dataset feature space to a deployment-specific one, and live-SIEM schema adaptation is explicitly scoped as future work, not assumed solved.
+2. **The reward function's business-disruption and analyst-cost terms are now grounded, not just plausible.** A 2026 paper (Safety-Contract Graph MARL) shows reward-only RL for autonomous network security response violates SOC operational budgets in 100% of tested episodes without exactly these kinds of terms — cited directly in Section IV as validation for why the dual-objective reward isn't a stylistic addition.
+
+### Bibliography Growth: 18 → 24 (toward a 35 target)
+
+Six new sources added this session, each read in full before being cited, not snippet-trusted:
+- **L2DHF (Jalalvand et al. 2025)** — a DRLHF accept/defer agent, arguably the closest prior art now, closer than AlertPro, since its whole mechanism is the same accept/defer tradeoff the Log action encodes. Real results: 13-16%/60-67% accuracy gains, 98% fewer high-category misprioritizations.
+- **AACT (Turcotte, Labrèche, Paquette 2025)** — supervised imitation-learning triage, real 6-month SOC deployment, 61% alert reduction, 1.36% FN rate.
+- **CORTEX (Wei et al. 2025)** — multi-agent LLM triage, non-RL competitor.
+- **SoK: MITRE ATT&CK (Roy et al. 2023)** — systematization review confirming no ATT&CK-to-RL connection exists in the broader literature either.
+- **ARCS (Ren et al. 2025)** — RL for incident-response strategy selection, one layer downstream of triage.
+- **Safety-Contract Graph MARL (Silva 2026)** — the reward-only-RL-breaks-constraints finding above.
+
+### Open Items
+
+- **Homayoun 2026** ("Risk-Aware SOC Alert Handling... Reinforcement Learning," ESORICS workshops) — the single most contemporary and closest-sounding paper found. Reward encodes "threat criticality, confidence, and isolation cost" — structurally close to ARSS's own design. Abstract confirmed real; full technical content (state/action space, MITRE grounding or not) still unverified. ResearchGate request-a-copy sent, not yet accepted. This is the one open item that could require repositioning the paper's contribution claim, not just adding a citation.
+- **TD3-AP, KNAP, Multi-Critic, AlertPro, Homayoun** — confirmed paywalled on both IEEE and the checked institutional library access; four of the five actually live on Elsevier ScienceDirect or SpringerLink, not IEEE, so IEEE-only access won't reach them. DOIs logged above for whoever has broader access to try.
+- Reward function coefficients ($\lambda_{\text{miss}}$, $C_{\text{analyst}}$, $C_{\text{biz}}$) are still placeholders pending a real design pass.
+- 11 more sources needed to reach the 35 benchmark, without padding — search continuing.
+
+---
+
+*Journal updated: July 20, 2026*
+*Covers: Session recovery through ongoing literature verification pass*
+
+> **The Bottom Line:** The idea survived two rounds of professor scrutiny and is genuinely sound. What hadn't survived scrutiny was the paperwork underneath it — several load-bearing citations were wrong, one was fabricated outright, and the actual RL agent the whole paper describes doesn't exist in code yet. This session's work isn't glamorous, but it's the actual floor a real submission stands on. Verify before you build on it.
+
+---
+
+## 📁 SESSION: September 19, 2026
+**Focus:** Session recovery (again) + title defense date locked + full document audit
+
+---
+
+### Title Defense Date Set
+
+Title defense presentation scheduled for **~September 28, 2026** (one week out from this session). Marking rubric incoming from the team, not yet reviewed.
+
+### Full Context Re-Grounding
+
+Prior Claude Code session was lost again. Rebuilt context by reading every doc in the repo end to end this time, not just `docs/` — root-level files too: `README.md`, `DTRA_Masterclass_Slides.md`, `DTRA_NotebookLLM_Prompt.md`, `DTRA_Research_Papers.md`, `DTRA Story.pdf`, `Scope Documents.pdf`, `SDP - Scope Document - Sample.pdf`, and the root export of the scope document. Confirms: last real research session was July 19-20, 2026 (literature verification). Nothing in the codebase or docs indicates any work happened between July 20 and this session.
+
+### Finding: The Signed Scope Document Still Contains the Fabricated Citations
+
+The July 19-20 session found and corrected a fabricated statistic and several wrong citations (Tariq et al. "4,484 alerts/day, 67% uninvestigated" — doesn't exist in the source paper; RADAMS "95.89% recall, 5.86% FPR" — doesn't exist in that paper either; the A2C bibitem pointing at a non-existent paper) — but explicitly left `docs/ARSS_Scope_Document_v2.md` untouched, on the reasoning that correcting an already-signed document is a supervisor-level decision, not something to silently patch.
+
+Confirmed this session by re-reading `docs/ARSS_Scope_Document_v2.md` directly: it still contains, uncorrected —
+- Table 1, row 6: "4,484 alerts/day, 67% uninvestigated" (the fabricated stat)
+- Table 1, row for RADAMS: "95.89% recall on 500K+ alerts" (the fabricated stat)
+- Reference [8]: the A2C bibitem with the wrong title/DOI pairing
+
+This is the document that was actually signed (`Fawad Sign.pdf`, dated the same day as the docx/pdf export, Apr 20) and submitted to the department. It has not been corrected. This is a live risk for the title defense: if a panelist cross-checks any of these three numbers against the cited source, they won't find them. The team needs to decide — before Sept 28 — whether and how to address this with the supervisor (Dr. Muhammad Fawad Khan), since the corrected versions already exist in `ARSS_Literature_Review.md`, `ARSS_Research_Findings.md`, and `ARSS_Paper.tex`.
+
+### Secondary Finding: Bibliography Further Along Than Journal Recorded
+
+`ARSS_Paper.tex` was saved 6 minutes after the July 20 journal entry was finalized, and already has **29 verified bibitems** — more than the "18 → 24, toward 35" the journal entry describes. Six additional sources (SoK Pitfalls in DRL-for-Cybersecurity, Multi-Objective RL critique, MITRE+RL attack-sim paper, a 2026 alert-fatigue survey covering 119 records, MARL-in-cybersecurity survey, Gartner 2026 trends) are in the `.tex` bibliography but were never logged in the journal text. Journal text and actual file state had drifted apart — noted here per the standing instruction to reconcile rather than just append.
+
+### Confirmed Still Open (carried over from July 20, unchanged)
+
+- Homayoun 2026 — ResearchGate request still pending, not yet verified beyond abstract.
+- TD3-AP, KNAP, Multi-Critic, AlertPro — still paywalled, DOIs logged for broader-access retrieval.
+- Reward coefficients ($\lambda_{\text{miss}}$, $C_{\text{analyst}}$, $C_{\text{biz}}$) — still placeholders.
+- Zero lines of the redesigned RL agent exist in code (`v2/server/decider.py` unchanged).
+- `ARSS_Paper.tex` has never successfully compiled — `IEEEtran.cls` missing locally (per `ARSS_Paper.log`, July 10 attempt).
+
+### Mid-Session Correction: MITREtrieval Title Was Wrong (Caught by Haider)
+
+While verifying the Homayoun 2026 paper's venue, Haider flagged that the MITREtrieval citation looked off. Checked it directly: the DOI (`10.1109/TNSM.2024.3401200`), IEEE Xplore document ID (`10539631`), journal/volume/issue, and author list were all already correct everywhere it's cited — but the title text was a paraphrase, not the real published title.
+
+- **Recorded (wrong):** "MITREtrieval: Fusing BERT with MITRE ATT&CK Ontology for TTP Extraction from Threat Reports"
+- **Actual (verified against IEEE Xplore, ACM DL, ResearchGate, and two university research-portal listings for the authors):** "MITREtrieval: Retrieving MITRE Techniques From Unstructured Threat Reports by Fusion of Deep Learning and Ontology" — same DOI, same paper, just mistitled.
+
+Fixed in `ARSS_Paper.tex`, `ARSS_Research_Findings.md`, and `ARSS_Literature_Review.md`. Left `ARSS_Scope_Document.md` (v1, historical) and `ARSS_Scope_Document_v2.md` (signed) untouched, same rule as the July 19-20 corrections — the signed document doesn't get silently patched. This is now a fourth item on the list to raise with Dr. Khan, alongside the fabricated alert-volume stat, the RADAMS figure, and the A2C mismatch.
+
+**Pattern worth noting:** every citation-integrity error found across both sessions has been a paraphrased/fabricated *title or figure* sitting on top of an otherwise-correct DOI and link. Worth spot-checking the remaining ~25 bibliography entries' titles verbatim against their DOIs at some point, not just trusting that a correct DOI implies a correct title.
+
+### What's Next
+
+- [ ] Review the marking rubric once shared and align prep priorities to it
+- [ ] Team decision: how/whether to flag the signed scope document's uncorrected citations to the supervisor before Sept 28 (now 4 items: alert-volume stat, RADAMS figure, A2C mismatch, MITREtrieval title)
+- [ ] Decide defense talking points given the paper has no implementation results yet — evaluation plan only
+- [ ] Continue toward 35-source literature benchmark if time allows before the defense
+- [ ] Consider a verbatim title-vs-DOI spot check across the rest of the bibliography
+
+---
+
+*Journal updated: September 19, 2026*
+*Covers: July 20, 2026 session recovery through title defense date confirmation*
+
+> **The Bottom Line:** One week to title defense. The research case is strong and well-documented, but the signed scope document still carries the citation errors that were caught and fixed everywhere else. That gap needs a decision, not just a note — before the panel finds it first.

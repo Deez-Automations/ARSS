@@ -1,0 +1,379 @@
+\documentclass[conference]{IEEEtran}
+
+\IEEEoverridecommandlockouts
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\newcommand{\categ}{\text{cat}}
+\newcommand{\danger}{d}
+\newcommand{\conf}{\kappa}
+\newcommand{\sev}{w}
+
+\begin{document}
+
+% =====================================================================
+% TODO (open for team review before this is treated as final):
+%   1. Title is a working title -- confirm wording with Haider/Daud.
+%   2. RL algorithm is presented as DQN per docs/DTRA_RL_Redesign_Thinking.md.
+%      The signed scope document (Apr 20) hedged this to "Deep Learning
+%      agent" -- if we are not committing to DQN yet, Section IV must be
+%      reworded before submission. Flagging, not deciding, here.
+%   3. Reward coefficients in Eq. (10)-(13) (lambda_miss, C_business,
+%      C_analyst) are drafted to match the logic in the redesign doc but
+%      the NUMERIC values are placeholders pending an actual design pass
+%      -- see inline comments at each equation.
+%   4. Results/Evaluation section intentionally has no numbers -- system
+%      implementation has not started per team decision (Apr 2026). This
+%      section describes the evaluation PLAN only.
+%   5. CIC-IIoT 2025 dataset citation (ref 20) needs the exact paper --
+%      currently a placeholder, confirm before submission.
+% =====================================================================
+
+\title{ARSS: Category-Conditioned Deep Reinforcement Learning for MITRE ATT\&CK-Grounded Autonomous SOC Alert Triage}
+
+\author{
+\IEEEauthorblockN{
+Muhammad Daniyal (2023406),
+Haider Iqbal (2023416),
+Syed Daud (2023677)
+}
+\IEEEauthorblockA{
+Senior Design Project --- CS 351 AI Lab\\
+Faculty of Computer Science and Engineering (FCSE)\\
+GIK Institute of Engineering Sciences and Technology\\
+Supervisor: Dr. Muhammad Fawad Khan \quad Co-Supervisor: Miss Hadia Abbas
+}
+}
+
+\maketitle
+
+\begin{abstract}
+Security Operations Centers (SOCs) receive thousands of alerts daily, the majority false positives or low-priority, producing alert fatigue that causes analysts to miss genuine threats not because detection failed but because meaningful review at scale is not humanly possible. Existing automated triage tools -- rule-based Security Orchestration, Automation and Response (SOAR) playbooks and machine learning risk-scoring systems -- rank or gate alerts but do not take response actions and do not learn from outcomes. Reinforcement Learning (RL) has been explored for alert prioritization, but every published formulation collapses the detector output into a single scalar risk score before it reaches the agent, and every reward function is a synthetic, game-theoretic quantity disconnected from how security teams actually classify threat severity. We propose ARSS (Autonomous Response System for SOC), an RL-based triage agent that departs from this pattern in three ways: (1) a category-conditioned state space that preserves attack type and classification confidence rather than collapsing them into a risk score, (2) a reward function grounded directly in MITRE ATT\&CK tactic severity rather than an invented heuristic, and (3) a discrete four-action response space (Ignore, Log, Block, Isolate) operating at the SIEM output layer, in contrast to prior work which outputs rankings only. This paper presents the system model, the formal reward and state-space design, and the evaluation protocol for training and testing ARSS on the CIC-IIoT 2025 dataset; empirical results are reported in a subsequent phase of this work.
+\end{abstract}
+
+\section{Introduction}
+
+Security Operations Centers handle thousands of alerts daily from Intrusion Detection Systems, firewalls, and Security Information and Event Management (SIEM) platforms. Detection tools have matured: suspicious activity is flagged at scale and aggregated reliably. What remains unsolved is triage --- deciding what to actually do with each flagged alert before it reaches a human analyst. A 2025 systematic review in \emph{ACM Computing Surveys} reports that 51\% of SOC teams feel overwhelmed by alert volume, and that analysts resolve only 49\% of alerts assigned to them within a workday \cite{tariq2025}. This is not a detection failure. The alerts are correctly generated; the failure is downstream, at the decision layer.
+
+Rule-based SOAR platforms address this with static playbooks: effective for anticipated attack patterns, but they do not adapt to novel attacks and discard analyst corrections instead of learning from them. Machine learning risk-scoring systems rank alerts by threat probability but stop short of taking a response action, leaving the actual triage decision with the analyst regardless of scoring quality.
+
+Reinforcement Learning has been applied to this problem, most substantially by Chavali et al. across a series of actor-critic formulations \cite{chavali2022,chavali2024,knap2024,chavali2025multicrit} and by Wang et al.'s AlertPro \cite{alertpro2024}. This body of work establishes that RL can learn an alert-handling policy that outperforms static heuristics. It also has two consistent limitations. First, every reward function is a synthetic, game-theoretic quantity -- an abstract "defender loss" or "attack cost" invented for the training environment -- with no connection to how a real analyst judges severity: a Reconnaissance scan and a Credential Access attack can receive comparable penalties despite being incomparable in real-world consequence. Second, every prior system outputs a ranking or a re-ranked list; none take a discrete response action. The analyst still has to decide what a top-ranked alert should trigger.
+
+ARSS is built to close both gaps at once. We define a category-conditioned state representation that gives the agent attack semantics (type and classification confidence) rather than a single risk scalar, we ground the reward function directly in MITRE ATT\&CK tactic severity so the agent's optimization target reflects real threat intelligence rather than an invented cost, and we define a discrete four-action response space -- Ignore, Log, Block, Isolate -- so the agent's output is an executable decision, not a ranking. The system operates at the SIEM output layer: it does not replace detection, it replaces the static playbook that decides what happens after detection.
+
+The rest of this paper is organized as follows. Section II formalizes the system as a Markov Decision Process and states the joint optimization problem. Section III reviews prior work in RL-based alert handling and situates ARSS against it. Section IV presents the proposed methodology in three layers, the full training objective, and the training algorithm. Section V describes the evaluation protocol. Section VI concludes and outlines future work.
+
+\section{System Model}
+
+ARSS sits between the SIEM output and the human analyst. Raw network flows are converted into triage decisions through two supervised detection stages that produce the RL agent's observation, followed by a learned policy that selects the response action.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\columnwidth}{\centering \vspace{2mm}
+    \textbf{Raw Traffic} $\rightarrow$ Firewall $\rightarrow$ IDS/IPS $\rightarrow$ SIEM \\
+    $\rightarrow$ \textbf{[ARSS: Stage 1 $\rightarrow$ Stage 2 $\rightarrow$ RL Policy]} \\
+    $\rightarrow$ Human SOC Analyst
+    \vspace{2mm}}}
+    \caption{ARSS operates after detection and aggregation, at the point where a triage decision is currently made manually or by a static playbook.}
+    \label{fig:pipeline}
+\end{figure}
+
+\subsection{Detection Stages (Observation Function)}
+
+Let $x \in \mathbb{R}^{71}$ be a network flow feature vector from the CIC-IIoT 2025 dataset. Stage 1 is a soft-voting ensemble of an XGBoost classifier \cite{xgboost2016} and a Deep Neural Network (DNN) that produces a danger score
+
+\begin{equation}
+\danger(x) = \tfrac{1}{2}\big(p_{\text{xgb}}(x) + p_{\text{dnn}}(x)\big), \quad \danger(x) \in [0,1]
+\end{equation}
+
+where $p_{\text{xgb}}(x)$ and $p_{\text{dnn}}(x)$ are the attack-class probabilities from the XGBoost and DNN branches respectively. A flow is gated to Stage 2 when $\danger(x) > \tau$, with $\tau$ the detection threshold calibrated on the validation set.
+
+Stage 2 is a second soft-voting ensemble (XGBoost + DNN) that classifies gated flows into one of $|\mathcal{C}|=7$ attack categories $\mathcal{C} = \{\text{MITM}, \text{Malware}, \text{DDoS}, \text{DoS}, \text{BruteForce}, \text{Web}, \text{Recon}\}$, producing a category
+
+\begin{equation}
+\categ(x) = \arg\max_{c \in \mathcal{C}} \; q_c(x)
+\end{equation}
+
+and a classification confidence
+
+\begin{equation}
+\conf(x) = \max_{c \in \mathcal{C}} \; q_c(x), \quad \conf(x) \in [1/7, 1]
+\end{equation}
+
+where $q_c(x) = \tfrac{1}{2}(q_c^{\text{xgb}}(x) + q_c^{\text{dnn}}(x))$ is the averaged category probability. Stages 1 and 2 are trained by supervised learning on labeled data and are held fixed during RL training; they exist to construct the state observation, not to be optimized by the agent. This paper trains and evaluates Stages 1--2 on the CIC-IIoT 2025 dataset's raw flow features. We note explicitly that a production SIEM does not natively export a compatible $(\danger, \categ, \conf)$ tuple: SIEM alerts typically carry a source-tool severity label and, increasingly, a MITRE ATT\&CK technique tag, but not the flow-level statistical features (e.g. inter-arrival-time and TCP-flag distributions) Stages 1--2 are trained on, nor a continuous multi-class confidence score. A live deployment therefore requires either a flow-meter pipeline (e.g. Zeek, CICFlowMeter, NetFlow/IPFIX) upstream of the SIEM to reconstruct a compatible feature vector, or retraining Stages 1--2 directly on the target environment's own alert schema; Stages 1--2 do not disappear at deployment so much as move from a public-dataset feature space to a deployment-specific one. This paper's contribution and evaluation are scoped to the RL policy trained on CIC-IIoT 2025-derived state vectors; live-SIEM schema adaptation is out of scope and left as future work (Section VI).
+
+\subsection{State and Action Space}
+
+The RL agent observes
+
+\begin{equation}
+s = \big[\, \danger(x) \;\big\|\; \text{onehot}(\categ(x)) \;\big\|\; \conf(x) \,\big] \in \mathbb{R}^{9}
+\end{equation}
+
+i.e. the danger score, a 7-dimensional one-hot encoding of the attack category, and the classification confidence, concatenated. This is the point of departure from prior work: every surveyed RL-for-triage system observes only a scalar or a bucketed risk score \cite{chavali2022,chavali2024,knap2024,alertpro2024}; $s$ instead preserves attack semantics so the agent can learn category-specific policies rather than a single threshold rule.
+
+The action space is discrete:
+
+\begin{equation}
+\mathcal{A} = \{\text{Ignore}, \text{Log}, \text{Block}, \text{Isolate}\}, \quad |\mathcal{A}| = 4
+\end{equation}
+
+\subsection{Problem Formulation}
+
+Let $y \in \{0,1\}$ denote the ground-truth label of $x$ (attack/benign, available during training from the dataset). The triage problem is the Markov Decision Process $(\mathcal{S}, \mathcal{A}, R, \gamma)$ with state space $\mathcal{S} \subseteq \mathbb{R}^9$ as in (4), action space $\mathcal{A}$ as in (5), a reward function $R(s,a,y)$ defined in Section IV, and discount factor $\gamma$. The agent's objective is
+
+\begin{equation}
+\Psi: \max_{\pi} \; \mathbb{E}_{x \sim \mathcal{D}} \big[\, R(s(x), \pi(s(x)), y(x)) \,\big]
+\end{equation}
+
+where $\pi: \mathcal{S} \rightarrow \mathcal{A}$ is the triage policy and $\mathcal{D}$ is the flow distribution. Problem (6) decouples naturally into two subproblems solved by different mechanisms: constructing $s(x)$ is a supervised learning problem (Stages 1--2, Section II-A), and choosing $\pi$ given $s(x)$ is the reinforcement learning problem this paper addresses -- the same fix-then-learn decoupling used to separate deterministic association from learned power control in an unrelated cooperative-jamming RL formulation \cite{hoseini}, applied here to separate deterministic detection from learned triage.
+
+\begin{table}[t]
+\caption{System Model Parameters}
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Value} \\
+\hline
+Raw feature dimension & 71 (CIC-IIoT 2025) \\
+State dimension $|\mathcal{S}|$ & 9 \\
+Attack categories $|\mathcal{C}|$ & 7 \\
+Action space $|\mathcal{A}|$ & 4 (Ignore/Log/Block/Isolate) \\
+Stage 1 / Stage 2 & XGBoost + DNN soft voting \\
+Detection threshold $\tau$ & calibrated on validation set \\
+Dataset & CIC-IIoT 2025 (685K flows) \cite{ciciiot2025} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Related Work}
+
+Physical alert prioritization via RL is a small but active line of work concentrated around one research group. Chavali et al. introduced SAC-AP \cite{chavali2022}, modeling alert prioritization as an adversarial Markov game between attacker and defender and applying Soft Actor-Critic to minimize expected defender loss, reporting up to a 30\% reduction versus a DDPG baseline. TD3-AP \cite{chavali2024} extended this with an off-policy actor-critic and validated on real IDS traffic (MQTT-IoT-IDS2020, DARPA 2000, CSE-CIC-IDS2018). KNAP \cite{knap2024} injected attack-graph domain knowledge to improve sample efficiency, and a later multi-critic variant \cite{chavali2025multicrit} addressed Q-value overestimation. All four formulations share the same reward structure: an abstract, game-theoretic attack/defense cost with no reference to an established threat severity taxonomy, and an output that is a continuous priority score rather than a response action.
+
+Wang et al.'s AlertPro \cite{alertpro2024} is close prior art. It couples a context-inference module with a self-evolution module that incorporates analyst feedback to re-rank alerts, achieving sub-500ms latency in a production-realistic setting. Its feedback signal, however, is a simple binary correct/incorrect label with no severity weighting -- a missed MITM and a missed Reconnaissance scan produce the same training signal -- and its output remains a ranked list; the analyst still decides what to do with the top-ranked alert.
+
+Closer still is Jalalvand et al.'s L2DHF \cite{l2dhf2025}, which trains a Deep RL from Human Feedback (DRLHF) agent to decide, per alert, whether to accept an upstream AI's prioritization or defer to a human analyst -- structurally an RL-learned accept/defer decision, which is the same underlying tradeoff ARSS's Log action encodes. Evaluated on UNSW-NB15 and CICIDS2017, L2DHF reports 13--16\% and 60--67\% higher prioritization accuracy respectively for critical alerts, a 98\% reduction in high-category misprioritizations, and a 37\% reduction in unnecessary deferrals. It remains, however, a binary accept/defer decision rather than a multi-action response space, and its reward is accuracy-driven rather than grounded in a threat severity taxonomy such as MITRE ATT\&CK.
+
+Two non-RL systems are worth positioning against directly, since ARSS's contribution must be defensible against supervised and LLM-based alternatives, not only other RL work. AACT \cite{aact2025}, from Sophos and Flare, learns to imitate analyst triage decisions via supervised learning and reports a 61\% reduction in alerts surfaced to analysts with a 1.36\% false-negative rate over a six-month real SOC deployment -- strong evidence the triage problem is solvable without RL, though, like Charlotte AI, it is bounded by the analyst behavior it imitates and cannot discover a policy better than its training decisions. CORTEX \cite{cortex2025} instead coordinates multiple specialized LLM agents (behavior analysis, evidence-gathering, reasoning) into an auditable triage decision, improving investigation quality over single-agent LLM baselines, but produces adjudication with an audit trail rather than a discrete response action, and inherits the latency and non-determinism costs of multi-agent LLM inference.
+
+Huang and Zhu's RADAMS \cite{radams2022} operates closer to the point in the pipeline ARSS targets, using tabular Q-learning to de-emphasize alerts during Informational Denial-of-Service (IDoS) flooding in an Industrial Control Systems setting, and modeling analyst attention dynamics via Yerkes-Dodson and sunk-cost theory; it reports up to a 20\% reduction in a dollar-denominated risk metric versus a default strategy. RADAMS already differentiates its cost function by criticality and source layer, so state-space category-awareness alone is not the gap it leaves open. What remains true is narrower and more precise: its cost structure is not grounded in MITRE ATT\&CK, its algorithm is tabular rather than deep RL, and its output is an integer controlling alert visibility rather than a discrete response action -- there is no Block or Isolate in its action space.
+
+Separately, MITRE ATT\&CK has been used as a structured intelligence source in ML pipelines: MITREtrieval \cite{mitretrieval2024} fuses BERT with the ATT\&CK ontology to extract tactics, techniques, and procedures (TTPs) from unstructured threat reports. This validates ATT\&CK as machine-learning-compatible, but the extracted TTPs are not fed back into a triage policy or a reward function in that work -- the loop from threat intelligence to a learned decision remains open. A systematization-of-knowledge review of the ATT\&CK literature \cite{sok_attack2023} independently confirms this: across its full taxonomy of ATT\&CK research applications (threat intelligence, detection, incident response), it identifies no work connecting ATT\&CK to reinforcement learning or automated response-policy learning, reinforcing that the reward-grounding gap this paper targets is not an artifact of a narrow search but absent from the broader ATT\&CK application literature. RL and MITRE ATT\&CK have been combined before, but on the opposite side of the problem: Oh et al. \cite{oh2024attacksim} use ATT\&CK as a technique library so a DRL agent can simulate realistic adversary attack sequences for red-team training, not to ground a defensive response reward. The combination exists in the literature; grounding a defensive reward function in it does not.
+
+Beyond alert-triage-specific work, reinforcement learning has also been applied to the broader incident-response decision problem: Ren et al.'s ARCS \cite{arcs2025} learns a hierarchical policy mapping attack patterns to defense measures with a reward balancing incident resolution time, system stability, and defense effectiveness, reporting 27.3\% faster resolution and 31.2\% higher defense effectiveness than rule-based baselines on a 20,000-incident dataset. ARCS operates one layer downstream of alert triage -- selecting a defense measure once an incident is already confirmed -- and its reward, like the alert-prioritization lineage above, is not grounded in a threat severity taxonomy. A parallel line of work applies multi-agent RL (MARL) to network-level cyber defense generally, coordinating multiple defending agents against intrusion and lateral movement \cite{marl_cybersec2025}; ARSS's single-agent formulation is a deliberate scope choice for this phase of the work, not an oversight of the multi-agent alternative.
+
+Tariq et al.'s Automated-Augmented-Collaborative (A2C) framework \cite{a2c2024} formalizes when SOC decision-making should act unilaterally, assist a human, or defer entirely, drawing on rejection-learning and learning-to-defer concepts; it is validated through simulative experiments with simulated human experts rather than a deployed RL policy or a live alert stream. Commercially, CrowdStrike's Charlotte AI \cite{charlotte2024} is trained via imitation learning on millions of curated analyst triage decisions; its Detection Triage feature reports a 98\% agreement rate with expert human triage outcomes and an average of 40 hours of manual work saved per week. Because imitation learning can only replicate observed behavior, however accurately, it inherits and cannot exceed the biases of the analysts it was trained on -- a ceiling RL-based optimization is not structurally bound by. Two independent \emph{ACM Computing Surveys} reviews \cite{tariq2025,jalalvand2024} -- the highest-impact venue in this subfield -- have each flagged the intersection of Cyber Threat Intelligence (CTI)-grounded reward design and RL-based response as underexplored, which is the gap this paper targets directly. A third, more recent survey \cite{alertfatigue_survey2026} synthesizing 119 records across 2015--2026 reaches the same conclusion from a wider aperture: its named persistent gaps are operational validation, adversarial robustness, cross-environment generalization, and evaluation practice, none of which are closed by a CTI-grounded RL response system -- consistent with, not contradicted by, the gap this paper targets.
+
+Across this literature, three properties never co-occur in a single system: a state space that preserves attack category and confidence rather than a scalar risk score, a reward function grounded in an established threat severity taxonomy rather than an invented heuristic, and a discrete multi-action response space rather than a ranking. That combination is the starting point of what follows.
+
+\section{Proposed Methodology}
+
+We cast the policy-learning subproblem of (6) as a Deep Q-Learning problem, learning $Q_\theta(s,a)$ to approximate the expected discounted return of taking action $a$ in state $s$. ARSS departs from the reward and state designs surveyed in Section III in three concrete ways.
+
+\subsection{Layer 1 --- Category-Conditioned State Space}
+
+As defined in (4), the state $s$ is 9-dimensional rather than a scalar. This means the learned $Q_\theta(s,a)$ can differ across categories at identical danger scores: a MITM at $\danger=0.80$ and a Reconnaissance scan at $\danger=0.80$ occupy different points in $\mathcal{S}$ and can be assigned different optimal actions, which is impossible under any prior formulation surveyed in Section III.
+
+\subsection{Layer 2 --- MITRE ATT\&CK-Grounded Severity Weighting}
+
+Each attack category is assigned a severity weight $\sev: \mathcal{C} \rightarrow (0,1]$ derived from the MITRE ATT\&CK tactic \cite{mitre_attack} it maps to (Table \ref{table:mitre}). This weighting is the reward signal's connection to real threat intelligence rather than an invented per-category constant.
+
+\begin{table}[t]
+\caption{MITRE ATT\&CK Severity Weights}
+\label{table:mitre}
+\centering
+\begin{tabular}{|l|l|c|}
+\hline
+\textbf{Category} & \textbf{MITRE Tactic} & $\sev(c)$ \\
+\hline
+MITM & Collection / Credential Access & 1.0 \\
+Malware & Execution / Persistence & 1.0 \\
+DDoS & Impact & 0.8 \\
+DoS & Impact & 0.7 \\
+BruteForce & Credential Access & 0.6 \\
+Web & Initial Access & 0.5 \\
+Recon & Discovery & 0.3 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Layer 3 --- Dual-Objective Reward: Containment vs. Workload}
+
+The reward must express the tradeoff a real analyst navigates: minimizing analyst interruption while maximizing threat containment. We define $R(s,a,y)$ piecewise over the ground truth $y$ and action $a$:
+
+\begin{equation}
+R(s,a,y) =
+\begin{cases}
+\sev(\categ) \cdot \conf & y{=}1,\; a \in \{\text{Block},\text{Isolate}\} \\[2pt]
+-\lambda_{\text{miss}} \cdot \sev(\categ) & y{=}1,\; a = \text{Ignore} \\[2pt]
+-C_{\text{analyst}} & y{=}1,\; a = \text{Log} \\[2pt]
+-C_{\text{biz}}(a) & y{=}0,\; a \in \{\text{Block},\text{Isolate}\} \\[2pt]
+0 & y{=}0,\; a \in \{\text{Ignore},\text{Log}\}
+\end{cases}
+\end{equation}
+
+\emph{(Placeholder coefficients pending a design pass: $\lambda_{\text{miss}}$, $C_{\text{analyst}}$, and $C_{\text{biz}}(a)$ are drawn from the business-cost ordering already used in the project's A* baseline, $C_{\text{biz}}(\text{Block}) < C_{\text{biz}}(\text{Isolate})$, and should be finalized together rather than left as this draft's implicit defaults.)}
+
+The first two rows scale reward and penalty by the MITRE severity weight $\sev(\categ)$, so missing a high-severity attack costs proportionally more than missing a low-severity one -- this is the mechanism that ties the learned policy to real-world threat consequence rather than an abstract cost. The dual objective is explicit in the competing terms: correct containment is rewarded (threat containment), while Log and false escalation are penalized by a fixed analyst-time cost (workload), and false-positive Block/Isolate actions are penalized by a business-disruption cost $C_{\text{biz}}(a)$ that is strictly increasing in the severity of the action (Isolate costs more than Block for the same false positive), which discourages the policy from defaulting to maximal disruption as a way to avoid missed-threat penalties. The $C_{\text{biz}}$ and $C_{\text{analyst}}$ terms are not a stylistic addition: recent work on autonomous network security response shows that reward-only multi-agent RL, evaluated without explicit operational budget terms, violates SOC downtime and disruption constraints in 100\% of tested episodes despite maximizing security reward \cite{safetycontract2026} -- a concrete demonstration that a containment-only reward is insufficient for a deployable policy, which is precisely the failure mode the workload terms in (7) are designed to prevent.
+
+We note a direct counterpoint that must be addressed rather than ignored: O'Driscoll et al. \cite{modrl_cyberdefence} critique exactly this style of reward -- a handcrafted scalarized weighted sum -- for autonomous cyber defense, arguing it "removes the ability to adapt the model during inference," and instead propose Pareto-based multi-objective RL (MOPPO, PCN) that produces a family of policies spanning the containment-workload tradeoff rather than committing to one fixed weighting at training time. Equation (7) is deliberately the simpler, scalarized formulation for this first phase of ARSS, consistent with the tabular and DQN baselines it is evaluated against; extending Layer 3 to a Pareto-based formulation so the deployed policy's tradeoff point can be adjusted post-training without retraining is identified as concrete future work in Section VI, not an oversight.
+
+\subsection{Training Objective and Algorithm}
+
+The full training objective is
+
+\begin{equation}
+J(\theta) = \mathbb{E}_{(s,a,r,s') \sim \mathcal{B}} \Big[\big(r + \gamma \max_{a'} Q_{\theta^-}(s',a') - Q_\theta(s,a)\big)^2\Big]
+\end{equation}
+
+with replay buffer $\mathcal{B}$ and target network $Q_{\theta^-}$ updated by periodic synchronization from $Q_\theta$, following the standard DQN formulation \cite{mnih2015}.
+
+\begin{algorithm}[H]
+\caption{ARSS: Category-Conditioned DQN Training}
+\begin{algorithmic}[1]
+\STATE \textbf{Initialize:} online network $Q_\theta$, target network $Q_{\theta^-} \leftarrow Q_\theta$, replay buffer $\mathcal{B}$
+\FOR{each training flow $x \sim \mathcal{D}$}
+    \STATE Compute $\danger(x)$ via Stage 1 ensemble (Eq. 1)
+    \IF{$\danger(x) > \tau$}
+        \STATE Compute $\categ(x)$, $\conf(x)$ via Stage 2 ensemble (Eq. 2--3)
+        \STATE Form state $s = [\danger \| \text{onehot}(\categ) \| \conf]$ (Eq. 4)
+        \STATE Select $a$ via $\epsilon$-greedy over $Q_\theta(s,\cdot)$
+        \STATE Observe ground truth $y(x)$; compute $r = R(s,a,y)$ (Eq. 7)
+        \STATE Store $(s,a,r)$ in $\mathcal{B}$; sample minibatch
+        \STATE Update $\theta$ by gradient descent on $J(\theta)$ (Eq. 8)
+        \STATE Periodically sync $\theta^- \leftarrow \theta$
+    \ENDIF
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Implementation}
+
+Stages 1--2 are implemented in TensorFlow/Keras and XGBoost, trained on the CIC-IIoT 2025 training split with class weights (no SMOTE) to preserve real traffic distributions. The RL agent is planned as a DQN implementation (framework to be finalized -- Section IV commits to the DQN formulation of \cite{mnih2015}; the exact training library is an open implementation choice, not a design choice, and does not affect the results in this section). Serving is via a Flask API that computes $(\danger,\categ,\conf)$ per flow and queries $\pi_\theta$ for the triage action.
+
+\section{Evaluation Plan}
+
+System implementation and training have not yet begun as of this writing; this section specifies the protocol to be executed in the next phase of the project, not results.
+
+\textbf{Dataset split:} CIC-IIoT 2025, with Stages 1--2 trained on the standard train split and the RL agent trained on the same split's flows re-scored through the trained detectors, holding out a disjoint test split for final evaluation.
+
+\textbf{Baselines:} (i) a rule-based threshold policy equivalent to the project's original A* decider, taking $\danger(x)$ alone; (ii) a flat (non-category-conditioned) Q-learning agent using only bucketed $\danger(x)$, to isolate the contribution of Layer 1; (iii) ARSS with a non-MITRE reward (uniform $\sev(c)=1$ for all $c$), to isolate the contribution of Layer 2.
+
+\textbf{Metrics:} proportion of alerts handled autonomously without analyst escalation; false-negative rate by attack category, weighted by $\sev(c)$; false-positive escalation rate (Log/Block/Isolate on benign traffic); and containment rate on high-severity categories (MITM, Malware) specifically, since these are the cases the severity weighting is designed to protect.
+
+\textbf{Ablations:} sensitivity of policy behavior to the coefficients in Eq. (7) ($\lambda_{\text{miss}}$, $C_{\text{analyst}}$, $C_{\text{biz}}$), and comparison of the full 9-dimensional state against the 1-dimensional and 8-dimensional (no confidence) reduced states to isolate the effect of the confidence term $\conf$.
+
+\textbf{Methodological rigor:} this protocol is checked against the 11 methodological pitfalls systematized by McFadden et al. \cite{sok_pitfalls2026} across 66 DRL-for-cybersecurity papers, spanning environment modeling, agent training, evaluation, and deployment stages, rather than assumed to be pitfall-free by construction.
+
+\section{Conclusion and Future Work}
+
+This paper presented the system model and reward design for ARSS, a category-conditioned reinforcement learning agent for autonomous SOC alert triage that grounds its reward function in MITRE ATT\&CK tactic severity and outputs a discrete four-action response rather than a ranking. The design closes two gaps independently flagged by systematic reviews in this field \cite{tariq2025,jalalvand2024}: the absence of CTI-grounded RL reward design, and the absence of a discrete response action space at the SIEM triage layer. Industry analysis reinforces the same tension from the deployment side: Gartner's 2026 cybersecurity trends report names AI-driven alert triage as a near-term SOC priority while stressing that human-in-the-loop oversight remains essential as these systems automate \cite{gartner2026} -- the Log action in ARSS's response space is exactly this deferral mechanism, not an omission. Implementation and empirical evaluation against the protocol in Section V are the immediate next phase of this work.
+
+Future extensions include a Cognitive Semantic Layer, in which an LLM combines SHAP feature attributions \cite{shap2017} from Stage 2 with the RL agent's decision to generate a plain-English incident narrative for the analyst, directly addressing the trust gap in autonomous triage adoption; continuous online learning from analyst overrides post-deployment, which the current offline formulation does not support; human-in-the-loop reward shaping, where analyst corrections adjust $\sev(c)$ or the coefficients in Eq. (7) over time rather than being fixed at training time; and a live-SIEM schema-adaptation layer, since Stages 1--2 as trained here consume CIC-IIoT 2025's flow-level feature space rather than a production SIEM's native alert schema, and closing that gap requires either an upstream flow-meter pipeline or retraining Stages 1--2 on the target deployment's own data (Section II-A).
+
+\bibliographystyle{IEEEtran}
+
+\begin{thebibliography}{20}
+
+\bibitem{tariq2025}
+S. Tariq, M. B. Chhetri, S. Nepal, and C. Paris, ``Alert Fatigue in SOCs: Research Challenges and Opportunities,'' \emph{ACM Computing Surveys}, vol. 57, no. 9, Article 224, 2025. DOI: 10.1145/3723158
+
+\bibitem{jalalvand2024}
+F. Jalalvand, M. B. Chhetri, S. Nepal, and C. Paris, ``Alert Prioritisation in Security Operations Centres: A Systematic Survey,'' \emph{ACM Computing Surveys}, vol. 57, no. 2, Article 42, 2024. DOI: 10.1145/3695462
+
+\bibitem{chavali2022}
+L. Chavali, T. Gupta, and P. Saxena, ``Soft Actor-Critic Based Deep Reinforcement Learning for Alert Prioritization,'' in \emph{Proc. IEEE Congress on Evolutionary Computation (CEC)}, 2022. DOI: 10.1109/CEC55065.2022.9870423
+
+\bibitem{chavali2024}
+L. Chavali, A. Krishnan, P. Saxena, B. Mitra, and A. S. Chivukula, ``Off-Policy Actor-Critic Deep Reinforcement Learning for Alert Prioritization,'' \emph{Computers \& Security}, vol. 142, 2024. DOI: 10.1016/j.cose.2024.103893
+
+\bibitem{knap2024}
+L. Chavali, P. Saxena, and B. Mitra, ``KNAP: Knowledge-Empowered Deep Reinforcement Learning for Alert Prioritization,'' in \emph{Proc. Advanced Information Networking and Applications (AINA)}, Springer LNCS, 2024. DOI: 10.1007/978-3-031-57916-5\_34
+
+\bibitem{chavali2025multicrit}
+L. Chavali and P. Saxena, ``Multi-Critic Deep Reinforcement Learning for Enhanced Alert Prioritization,'' in \emph{Proc. AINA 2025}, Springer LNDECT vol. 249, 2025. DOI: 10.1007/978-3-031-87775-9\_15
+
+\bibitem{alertpro2024}
+X. Wang, X. Yang, X. Liang, et al., ``AlertPro: Context-Aware Reinforcement Learning for Alert Prioritization,'' \emph{Computers \& Security}, vol. 137, 2024. DOI: 10.1016/j.cose.2023.103583
+
+\bibitem{l2dhf2025}
+F. Jalalvand, M. B. Chhetri, S. Nepal, and C. Paris, ``Adaptive Alert Prioritisation in Security Operations Centres via Learning to Defer with Human Feedback,'' arXiv:2506.18462, 2025. Verified 2026-07-20, full abstract read.
+
+\bibitem{aact2025}
+M. Turcotte, F. Labr\`eche, and S.-O. Paquette, ``Automated Alert Classification and Triage (AACT): An Intelligent System for the Prioritisation of Cybersecurity Alerts,'' arXiv:2505.09843, 2025. Verified 2026-07-20, full abstract read; authors affiliated with Sophos and Flare.
+
+\bibitem{cortex2025}
+B. Wei, Y. S. Tay, H. Liu, J. Pan, K. Luo, Z. Zhu, and C. Jordan, ``CORTEX: Collaborative LLM Agents for High-Stakes Alert Triage,'' arXiv:2510.00311, 2025. Verified 2026-07-20, full abstract read.
+
+\bibitem{radams2022}
+L. Huang and Q. Zhu, ``RADAMS: Resilient and Adaptive Alert and Attention Management Strategy Against Informational Denial-of-Service Attack,'' \emph{Computers \& Security}, 2022. arXiv: 2111.03463. Verified 2026-07-20, full 15-page PDF read directly.
+
+\bibitem{sok_pitfalls2026}
+S. McFadden, M. Foley, E. Bates, I. Tsingenopoulos, S. Vyas, V. Mavroudis, C. Hicks, and F. Pierazzi, ``SoK: The Pitfalls of Deep Reinforcement Learning for Cybersecurity,'' arXiv:2602.08690, 2026. Verified 2026-07-20, full abstract read.
+
+\bibitem{modrl_cyberdefence}
+R. O'Driscoll, C. Hagen, J. Bater, and J. M. Adams, ``Multi-Objective Reinforcement Learning for Automated Resilient Cyber Defence,'' arXiv:2411.17585, 2024 (revised 2025). Verified 2026-07-20, full abstract read.
+
+\bibitem{oh2024attacksim}
+S. H. Oh, J. Kim, and J. Park, ``Dynamic Cyberattack Simulation: Integrating Improved Deep Reinforcement Learning with the MITRE-ATT\&CK Framework,'' \emph{Electronics}, vol. 13, no. 14, article 2831, 2024. DOI: 10.3390/electronics13142831. Verified 2026-07-20, full abstract read.
+
+\bibitem{alertfatigue_survey2026}
+S. Ndichu, T. Ban, S. Ozawa, T. Takahashi, and D. Inoue, ``AI-Driven Security Alert Screening and Alert Fatigue Mitigation in Security Operations Centers: A Comprehensive Survey,'' arXiv:2605.08316, 2026. Verified 2026-07-20, full abstract read; synthesizes 119 records (87 core studies), 2015--2026.
+
+\bibitem{marl_cybersec2025}
+C. R. Landolt, C. W\"ursch, R. Meier, A. Mermoud, and J. Jang-Jaccard, ``Multi-Agent Reinforcement Learning in Cybersecurity: From Fundamentals to Applications,'' arXiv:2505.19837, 2025. Verified 2026-07-20, full abstract read.
+
+\bibitem{sok_attack2023}
+S. Roy, E. Panaousis, C. Noakes, A. Laszka, S. Panda, and G. Loukas, ``SoK: The MITRE ATT\&CK Framework in Research and Practice,'' arXiv:2304.07411, 2023. Verified 2026-07-20, full abstract read.
+
+\bibitem{arcs2025}
+S. Ren, J. Jin, G. Niu, and Y. Liu, ``ARCS: Adaptive Reinforcement Learning Framework for Automated Cybersecurity Incident Response Strategy Optimization,'' \emph{Applied Sciences}, vol. 15, no. 2, article 951, 2025. Verified 2026-07-20, full abstract read.
+
+\bibitem{safetycontract2026}
+J. L. L. de Jesus Silva, ``Safety-Contract Graph Multi-Agent Reinforcement Learning for Autonomous Network Security Response,'' arXiv:2606.13832, 2026. Verified 2026-07-20, full abstract read.
+
+\bibitem{a2c2024}
+S. Tariq, M. B. Chhetri, S. Nepal, and C. Paris, ``A2C: A Modular Multi-stage Collaborative Decision Framework for Human-AI Teams,'' \emph{Expert Systems with Applications}, 2024. arXiv:2401.14432. \emph{(Corrected 2026-07-20: the title and author list previously recorded here for this citation did not match any real paper under the same DOI; this entry now points to the verified paper that actually defines the A2C framework by name.)}
+
+\bibitem{mitretrieval2024}
+Y. T. Huang, R. Vaitheeshwari, M. C. Chen, Y. D. Lin, and R. H. Hwang, ``MITREtrieval: Retrieving MITRE Techniques From Unstructured Threat Reports by Fusion of Deep Learning and Ontology,'' \emph{IEEE Transactions on Network and Service Management}, vol. 21, no. 4, pp. 4871--4887, 2024. DOI: 10.1109/TNSM.2024.3401200. \emph{(Title corrected 2026-09-19: previously recorded here as ``Fusing BERT with MITRE ATT\&CK Ontology for TTP Extraction from Threat Reports'' -- a paraphrase, not the published title. DOI, IEEE document ID, journal/volume/issue, and authors were all already correct and unchanged; only the title string was wrong.)}
+
+\bibitem{charlotte2024}
+CrowdStrike, ``Charlotte AI: Agentic Analyst for Cybersecurity,'' CrowdStrike Product Documentation, 2024--2025. Available: https://www.crowdstrike.com/en-us/platform/charlotte-ai/. \emph{(Note: the specific 98\% agreement-rate and 40-hours-saved-per-week figures cited in the text below belong to the ``Charlotte AI Detection Triage'' feature specifically, announced Feb. 2025, not the Charlotte AI product generally -- verified 2026-07-20 against CrowdStrike's own press materials.)}
+
+\bibitem{mnih2015}
+V. Mnih et al., ``Human-Level Control Through Deep Reinforcement Learning,'' \emph{Nature}, vol. 518, pp. 529--533, 2015.
+
+\bibitem{xgboost2016}
+T. Chen and C. Guestrin, ``XGBoost: A Scalable Tree Boosting System,'' in \emph{Proc. ACM SIGKDD}, 2016. DOI: 10.1145/2939672.2939785
+
+\bibitem{shap2017}
+S. M. Lundberg and S.-I. Lee, ``A Unified Approach to Interpreting Model Predictions,'' in \emph{Proc. NeurIPS}, 2017.
+
+\bibitem{mitre_attack}
+MITRE Corporation, ``MITRE ATT\&CK,'' [Online]. Available: https://attack.mitre.org
+
+\bibitem{ciciiot2025}
+A. Firouzi, S. Dadkhah, S. A. Maret, and A. A. Ghorbani, ``DataSense: A Real-Time Sensor-Based Benchmark Dataset for Attack Analysis in IIoT with Multi-Objective Feature Selection,'' \emph{Electronics}, vol. 14, no. 20, article 4095, 2025. Canadian Institute for Cybersecurity, University of New Brunswick. \emph{(Verified 2026-07-20: confirmed against the project's own extracted feature list -- the 71-feature set includes sensor-log fusion fields (log\_data-ranges\_*, log\_messages\_count) matching DataSense's synchronized sensor-plus-network-traffic testbed design, not a pure network-flow dataset.)}
+
+\bibitem{hoseini}
+S. A. Hoseini et al., ``Cooperative Jamming for Physical Layer Security Enhancement Using Deep Reinforcement Learning,'' in \emph{Proc. IEEE Globecom Workshops}, 2023. DOI: 10.1109/GCWKSHPS58843.2023.10465104
+
+\bibitem{gartner2026}
+Gartner, ``Gartner Identifies the Top Cybersecurity Trends for 2026,'' Gartner Newsroom, Feb. 2026.
+
+\end{thebibliography}
+
+\end{document}
