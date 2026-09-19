@@ -816,3 +816,52 @@ Fixed in `ARSS_Paper.tex`, `ARSS_Research_Findings.md`, and `ARSS_Literature_Rev
 *Covers: July 20, 2026 session recovery through title defense date confirmation*
 
 > **The Bottom Line:** One week to title defense. The research case is strong and well-documented, but the signed scope document still carries the citation errors that were caught and fixed everywhere else. That gap needs a decision, not just a note — before the panel finds it first.
+
+---
+
+## 📁 SESSION: September 20, 2026 (continued)
+**Focus:** Literature search expansion, RL refresher materials, GitHub sync
+
+---
+
+### Literature Search Agents
+
+Ran two parallel background searches for 2024-2026 papers, quality-filtered against the standing bar (real, verified, specific job in the argument, no padding). One completed with 13 new candidates plus a full Homayoun 2026 deep-dive; a second, independent run was still pending as of this entry and should be reconciled against the first when it lands.
+
+**Homayoun 2026 resolved.** Full abstract retrieved and cross-verified across 3 independent sources. Confirmed: algorithm is plain PPO, reward is explicitly "threat criticality + confidence + isolation cost" — **not MITRE ATT&CK-grounded**, straight from the authors' own abstract. State space and action space remain unrecoverable from any open source (Springer/ACM DL paywalled) — a hard blocker, not a search failure. ARSS's novelty gap on category-conditioned state space and the 4-action response space survives untouched against this paper; only the reward-taxonomy differentiator is currently provable.
+
+**13 new candidates found**, not yet added to the bibliography — logged with full detail in the new `ARSS_Literature_Session_Notes.md` rather than repeated here. Notable: a "Beyond Rewards in RL for Cyber Defence" paper that argues *for* sparse rewards (a real counterpoint to engage with, not just cite favorably), and DRL-MD (RL + MITRE ATT&CK, but for mitigation-deployment planning, not per-alert triage — a "the combination exists, just not for our problem" citation).
+
+### Two New Reference Documents Created
+
+1. **`docs/ARSS_RL_Concepts_Primer.md`** — a from-zero RL vocabulary refresher (MDP, Q-values, tabular vs. deep Q-learning, actor-critic/PPO/SAC/TD3, on/off-policy, reward shaping, MITRE ATT&CK basics), written after the team realized they'd lost most technical RL recall after the months-long gap and needed to be able to read a paper abstract and actually understand it. Every concept is tied back to ARSS's own specific design choices, not left generic.
+2. **`docs/ARSS_Literature_Session_Notes.md`** — the raw working notes behind the literature review: status snapshot, verification-depth breakdown, the Homayoun deep-dive, the MITREtrieval correction reasoning, and the new candidate list. Deliberately kept separate from the polished `ARSS_Literature_Review.md`/`ARSS_Research_Findings.md` — this is the "how we got there," not the citation-ready output.
+
+### `brag` Skill Installed
+
+Installed the `brag` Claude Code skill (github.com/latent-spaces/brag) into `.claude/skills/brag/` — generates short launch-style promo videos via Hyperframes, not slide decks (flagged this distinction before installing; team confirmed they wanted it anyway). Note: this machine has no Node.js, npx, or FFmpeg on PATH — the skill files are in place, but the actual render pipeline needs that toolchain set up before `/brag` can run.
+
+### GitHub Sync
+
+Found that **months of local documentation had never been pushed** — `ARSS_Paper.tex`, the signed `ARSS_Scope_Document_v2.md`, the Masterclass slides, the Research Papers list, the NotebookLLM prompt doc, the related-work table, both downloaded literature PDFs, and the defense/story PDFs were all sitting locally, untracked, alongside one already-committed-but-unpushed doc addition from April 15. Committed a curated set (listed in the commit itself) and pushed to `origin/main` so Haider and Daud can actually access current state.
+
+**Deliberately excluded from this push, flagged rather than silently included:**
+- `v2/models/*.h5`, `*.pkl` — showed real content changes (`dtra_categorizer.h5` grew from 789KB to 3.4MB) with no session context explaining why. Left as local uncommitted changes rather than guessing whether this was an intentional retrain.
+- `Fawad Sign.pdf` — contains the supervisor's actual signature; sensitive, not pushed without explicit confirmation.
+- `Scope Documents.pdf`, `SDP - Scope Document - Sample.docx/pdf` — reference/template material, not ARSS's own content (`Scope Documents.pdf` is literally a different team's SDP).
+- `~$SS Scope Document .docx` — a Word lock/temp file, never worth tracking.
+- `docs/ARSS_Paper.log` — a failed local LaTeX compile log, diagnostic noise, not source content.
+
+### What's Next
+
+- [ ] Reconcile the second (pending) literature-search agent run against the first once it completes
+- [ ] Decide which 5-6 of the 13 new candidates actually get added to the formal bibliography
+- [ ] Team decision on `Fawad Sign.pdf` and the model file changes — both left out of today's push pending input
+- [ ] Everything carried over from the Sept 19 entry above (rubric review, signed-doc correction decision, defense talking points) still stands
+
+---
+
+*Journal updated: September 20, 2026*
+*Covers: literature search expansion, RL primer, GitHub sync*
+
+> **The Bottom Line:** The team can now actually read a paper abstract and know what it's claiming — that was the missing piece, not more papers. Homayoun's reward-taxonomy gap is confirmed and citable; its state/action space stays an open question behind a paywall. Everything that existed only on one laptop for months now lives on GitHub too.
