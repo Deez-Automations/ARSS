@@ -88,4 +88,28 @@ This needs a decision before Sept 28 — not fixed by this pass.
 
 ---
 
+## Working notes for whoever (human or AI) picks this project back up
+
+This section is deliberately written for the *next* session, not for a reader trying to understand ARSS itself. Two sessions in a row started with "prior session was lost, rebuilding context from scratch" — this is here so the next rebuild is faster and repeats fewer mistakes.
+
+### The one pattern that matters most: correct DOI ≠ correct citation
+Every single citation-integrity error found across both audit sessions (July 19-20 and Sept 19-20) had the exact same shape: **the DOI and publisher link were right, but the title text or a result figure attached to it was wrong** — a paraphrase, a misquote, or a mismatch. A DOI resolving to a real paper is necessary but not sufficient. The actual check that catches these errors is: pull the verbatim title from the publisher page itself (IEEE Xplore / ACM DL / ScienceDirect / SpringerLink) and diff it character-by-character against what's recorded, not just confirm "yes this DOI exists." Do this for any citation touched, not just new ones — old, previously-"verified" entries have failed this check twice now (RADAMS's figure, MITREtrieval's title).
+
+### The signed document is off-limits for silent edits, permanently
+`ARSS_Scope_Document_v2.md` was signed and submitted. Its known errors (fabricated alert-volume stat, fabricated RADAMS figure, wrong A2C citation, mistitled MITREtrieval) have been left in place across two sessions, deliberately, because correcting a signed academic document is the team's and supervisor's call, not something to fix quietly in the background. Keep flagging it as an open decision in the journal; never patch it without being asked.
+
+### Working with this specific repo
+- The project lives on a UNC network path (`\\...\GIKI\...\DTRA`). Git reports "dubious ownership" on every bare git command here — the fix is `git -c safe.directory='*' <command>` on every invocation (a per-command flag, never a saved config change; do not run `git config --global add safe.directory` even though it would "fix" this more permanently — that's a standing instruction, not just caution for this session).
+- Commit author for this project, when instructed: `Muhammad Daniyal <johnnytylor88@gmail.com>` (`git commit --author="..."`), not whatever default identity is locally configured.
+- When staging for a commit, never `git add -A` or `git add .` on this repo — it accumulates real landmines: binary ML model files that change without an explained reason, a supervisor's signature PDF, another team's project documents, Word lock files (`~$*.docx`). Stage an explicit file list every time, and read `git status` first to see what's actually sitting there — this repo had **months of documentation that existed only on one laptop and had never been pushed**, discovered only by actually looking.
+- Pushing to GitHub on this environment requires an explicit permission grant separate from the user's instruction to push — expect a possible block on the first attempt and surface it clearly rather than silently retrying past it.
+
+### On spawning research agents for literature search
+Giving the agent the *exact* already-cited bibliography (not just "avoid duplicates") and an explicit, non-negotiable verification bar ("real first, no exceptions — never report a title from training-data memory, only from a live, confirmed search result") produced clean, well-calibrated results with honest confidence labels (full-text / abstract-verified / metadata-only) and zero fabrication. That prompt shape is worth reusing verbatim for the next literature push, not reinvented each time.
+
+### On this team's actual state, so it doesn't get re-litigated
+The idea is sound and has survived two rounds of professor scrutiny. The research/citation layer is in genuinely good shape as of this session. The implementation is not — zero lines of the redesigned RL agent exist in code. Don't let a good literature session create a false impression that the project is further along than it is; the honest gap is engineering time, not research quality.
+
+---
+
 *Written: September 19-20, 2026. Companion to `ARSS_Literature_Review.md` (polished) and `ARSS_RL_Concepts_Primer.md` (vocabulary reference).*
