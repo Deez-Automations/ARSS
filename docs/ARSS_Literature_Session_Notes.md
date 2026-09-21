@@ -65,18 +65,65 @@ This needs a decision before Sept 28 — not fixed by this pass.
 
 ---
 
-## New candidate papers found (2024-2026 agent search, round 2 — round 1 pending)
+## New candidate papers found (2024-2026 agent search, round 2 — round 1 confirmed cancelled)
 
-13 candidates surfaced, quality-filtered against the standing bar (real, verified, specific job in the argument, no padding). Full detail with venue/DOI/verification-confidence per paper is in the chat session — summarized here by role:
+13 candidates surfaced, quality-filtered against the standing bar (real, verified, specific job in the argument, no padding). Round 1 (a separate parallel search launched the same session) was explicitly stopped/cancelled before finishing and is not recoverable — round 2 already covers the same ground, so nothing is actually missing.
 
-- **Direct RL-for-alert-triage competitors:** an offline-RL SOC-triage benchmark (ScienceDirect, metadata-only — author names unrecoverable, needs a proper look once accessible); a Splunk-integrated hybrid LLM+RL triage framework (arXiv 2603.23966).
-- **Non-RL competitors:** fuzzy-logic alert prioritization (arXiv 2605.27299); active-learning alert-fatigue reduction, PACT (arXiv 2605.22324, same lead author as the already-cited Ndichu survey — legitimate newer follow-on, not a duplicate); a post-hoc confidence-calibration decision layer (arXiv 2601.04486); a tiered human-AI autonomy framework for SOCs (arXiv 2505.23397).
-- **MITRE ATT&CK + RL, different sub-problem:** DRL-MD — RL for mitigation *deployment planning* grounded in ATT&CK technique relationships, not per-alert triage (*Computing* journal, Springer, 2024); governance-to-mitigation RL via NIST CSF + ATT&CK (arXiv 2605.09792).
-- **Reward-design theory:** "Beyond Rewards in RL for Cyber Defence" (arXiv 2602.04809) — argues *for* sparse rewards, a genuine counterpoint worth engaging rather than only citing favorably; LLM-generated reward design (arXiv 2511.16483) — useful contrast case ("invented/LLM reward" vs. ARSS's "framework-grounded reward").
-- **State-space precedent (non-RL):** AlertSAGE (SEC 2026/Springer) — semantic/graph-based alert representation, supports the "categorical richness beats scalar collapse" argument without being RL itself.
-- **Recent surveys for context:** a broad RL-for-network-security survey+tutorial (*Journal of Information Security and Applications*, 2026); an agentic-AI-in-cybersecurity survey (arXiv 2601.05293).
+**Role summary:**
+- **Direct RL-for-alert-triage competitors:** an offline-RL SOC-triage benchmark (#1 below); a Splunk-integrated hybrid LLM+RL triage framework (#5).
+- **Non-RL competitors:** fuzzy-logic alert prioritization (#2); active-learning alert-fatigue reduction, PACT (#3, same lead author as the already-cited Ndichu survey — legitimate newer follow-on, not a duplicate); a post-hoc confidence-calibration decision layer (#4); a tiered human-AI autonomy framework for SOCs (#6).
+- **MITRE ATT&CK + RL, different sub-problem:** DRL-MD — RL for mitigation *deployment planning* grounded in ATT&CK technique relationships, not per-alert triage (#9); governance-to-mitigation RL via NIST CSF + ATT&CK (#10).
+- **Reward-design theory:** "Beyond Rewards in RL for Cyber Defence" (#11) — argues *for* sparse rewards, a genuine counterpoint worth engaging rather than only citing favorably; LLM-generated reward design (#12) — useful contrast case ("invented/LLM reward" vs. ARSS's "framework-grounded reward").
+- **State-space precedent (non-RL):** AlertSAGE (#7) — semantic/graph-based alert representation, supports the "categorical richness beats scalar collapse" argument without being RL itself.
+- **Recent surveys for context:** a broad RL-for-network-security survey+tutorial (#8); an agentic-AI-in-cybersecurity survey (#13).
 
-**Status:** none of these are in the bibliography yet — pending a decision on which 5-6 to actually fold in. A second, independent agent search (round 1, launched before round 2) is still pending as of this note and may add or overlap with the above; reconcile when it lands.
+### Verified bibliographic details (Sept 21, 2026 re-verification pass)
+
+Every entry below was independently re-confirmed via the arXiv API directly, the Crossref API, and publisher pages — not trusted from the round-2 search summary. Two title discrepancies were found and are flagged, not silently normalized (per the standing citation-verification rule).
+
+| # | Title | Authors | Venue/Year | DOI | arXiv |
+|---|---|---|---|---|---|
+| 1 | A leakage-free benchmark of offline policy learning for SOC alert triage | Emmanuel Okafor | *Machine Learning with Applications* (Elsevier), 2026 | 10.1016/j.mlwa.2026.100984 | none (confirmed absent via arXiv API) |
+| 2 | Risk Averse Alert Prioritization for IDS Using Subnormal Gaussian Fuzzy Models | Murat Moran | arXiv, May 2026 | none | [2605.27299](https://arxiv.org/abs/2605.27299) |
+| 3 | PACT: Reducing Alert Fatigue in Low-Prevalence SOC Streams with Triggered Active Learning | Ndichu, Ban, Ozawa, Takahashi, Inoue | arXiv, May 2026 | none | [2605.22324](https://arxiv.org/abs/2605.22324) |
+| 4 | Decision-Aware Trust Signal Alignment for SOC Alert Triage | Chowdhury, Tanvir | arXiv, Jan 2026 | none | [2601.04486](https://arxiv.org/abs/2601.04486) |
+| 5 | Policy-Guided Threat Hunting: An LLM enabled Framework with Splunk SOC Triage | Sahay et al. (8 authors) | arXiv, v3 | none | [2603.23966](https://arxiv.org/abs/2603.23966) |
+| 6 | A Unified Framework for Human AI Collaboration in Security Operations Centers with Trusted Autonomy | Mohsin, Janicke, Ibrahim, Sarker, Camtepe | ACM Trans. Internet Technology, Jul 2026 | 10.1145/3837073 | [2505.23397](https://arxiv.org/abs/2505.23397) |
+| 7 | AlertSAGE: Semantic-Aware Alert Graph Embedding for Cybersecurity Incident Discovery | S. Jiang, Z. Liu, Y. Wang, Z. Zhang, H. Wang, Y. Hu (initials only — full given names unrecoverable) | SEC 2026, Springer IFIP AICT | 10.1007/978-3-032-27993-4_29 | none (confirmed absent) |
+| 8 | Beyond Reinforcement Learning for Network Security: A Comprehensive Survey and Tutorial | Javadpour, Ja'fari, Taleb, Turkmen, Benzaïd | J. Information Security and Applications, vol. 96, 2026 | 10.1016/j.jisa.2025.104294 | none (confirmed absent) |
+| 9 | Optimization of mitigation deployment using DRL over an enhanced ATT&CK (DRL-MD) | Liu, Guo, Ranjan, Chen | *Computing* (Springer), 2024 | 10.1007/s00607-024-01344-4 | none (confirmed absent) |
+| 10 | Operationalizing Cybersecurity Governance for Mitigation Planning with Attack-Path Modeling and RL | Huff, Dale, Guduru, Singh, Li | arXiv, May 2026 | none | [2605.09792](https://arxiv.org/abs/2605.09792) |
+| 11 | Beyond Rewards in Reinforcement Learning for Cyber Defence | Bates, Hicks, Mavroudis | arXiv, v3 | none (only arXiv's own blanket DOI) | [2602.04809](https://arxiv.org/abs/2602.04809) |
+| 12 | LLM-Based Reward Design for DRL-Driven Autonomous Cyber Defense | Mukherjee, Chatterjee, Purvine, Fujimoto, Emerson | AAAI-26 Workshop (AICS) | none yet (workshop proceedings) | [2511.16483](https://arxiv.org/abs/2511.16483) |
+| 13 | A Survey of Agentic AI and Cybersecurity: Challenges, Opportunities and Use-case Prototypes | Lazer, Aryal, Gupta, Bertino | arXiv, Jan 2026 | none | [2601.05293](https://arxiv.org/abs/2601.05293) |
+
+**Tally:** 1 of 13 has both DOI and arXiv (#6) · 4 have DOI only, no preprint exists — confirmed arXiv-absent by direct API query, not inferred (#1, 7, 8, 9) · 8 have arXiv only, no publisher DOI yet, several still pending venue acceptance (#2, 3, 4, 5, 10, 11, 12, 13).
+
+**Flagged, not silently fixed:**
+- **#6** — arXiv's title has no hyphen ("Human AI Collaboration"), vs. "Human-AI" as originally recorded. Authors/DOI/abstract all match exactly; likely a typographic variant of the ACM-published form. Confirm before citing formally.
+- **#8** — Crossref/ScienceDirect store the title in sentence case ("network security," "comprehensive" lowercase) vs. title case as originally recorded. Same likely-benign caveat.
+
+**Status:** none of these 13 are in the formal bibliography yet — pending a decision on which 5-6 to actually fold in.
+
+---
+
+## The 4 never-independently-verified legacy citations — closed out (Sept 21, 2026)
+
+SAC-AP, TD3-AP, KNAP, Multi-Critic, and AlertPro had been cited since the original April 2026 compilation without ever going through the same re-verification rigor applied to everything else. Ran a dedicated pass. Findings, worst first:
+
+**TD3-AP — wrong DOI, not a mistitling.** `10.1016/j.cose.2024.103893` (what was recorded everywhere) resolves via Crossref to an unrelated paper by different authors (Bingu et al.). Correct DOI: **10.1016/j.cose.2024.103854** — a single-digit transposition (893 → 854), copied forward into every document without anyone clicking through until now. Worse than any prior error: a wrong title still describes a real source; a wrong DOI sends the reader to someone else's paper entirely. Real title also confirmed: "Off-policy actor-critic deep reinforcement learning methods for alert prioritization in intrusion detection systems" (adds "methods" and "in intrusion detection systems," both dropped previously).
+
+**AlertPro — substantially mistitled.** Real title (three-way confirmed, Crossref + Semantic Scholar + dblp): "Combating alert fatigue with AlertPro: Context-aware alert prioritization using reinforcement learning for multi-step attack detection." What was recorded dropped both the paper's actual framing and its actual technical scope. Full author list corrected from "et al." to the real six names.
+
+**KNAP and Multi-Critic — real title errors, less severe.** Both missing their actual subtitles ("...to Prioritize Alerts Generated by Intrusion Detection Systems" / "...in Intrusion Detection Systems"). Corrected.
+
+**Open, unresolved concern on KNAP specifically:** ARSS's own paper describes KNAP as improving "sample efficiency." Secondary sources (primary abstract still paywalled, Springer login wall) instead describe its headline contribution as three defender-knowledge-level variants (D-/S-/T-KNAP) with specific defender-loss-reduction percentages — a possibly different framing. Not confirmed either way against primary text. Flagged inline in all three docs; do not resolve by guessing, resolve by getting the actual PDF.
+
+**SAC-AP — cleanest of the five.** Correct DOI, correct authors, 30%-vs-DDPG claim confirmed directly from Semantic Scholar's primary abstract field (not a snippet). Only needed a title-prefix fix ("SAC-AP:" restored).
+
+**Access reality check:** primary abstract text was blocked on 4 of 5 papers — SpringerLink login wall (KNAP, Multi-Critic), ScienceDirect HTTP 403 (TD3-AP, AlertPro). All quantitative figures attributed to those four in ARSS's own paper (dataset lists, percentage improvements) are currently **search-snippet corroborated only**, flagged as such at every location, not primary-text confirmed. This is now the clearest concrete case for getting real institutional/library access before the paper is finalized — not a "nice to have."
+
+**Fixed in:** `ARSS_Paper.tex`, `ARSS_Literature_Review.md`, `ARSS_Research_Findings.md`. **Left untouched (as always):** both Scope Documents — this brings the signed document's correction backlog to 6 items (fabricated alert stat, fabricated RADAMS figure, A2C mismatch, mistitled MITREtrieval, wrong TD3-AP DOI, mistitled AlertPro).
 
 ---
 

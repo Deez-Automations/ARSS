@@ -862,6 +862,77 @@ Found that **months of local documentation had never been pushed** — `ARSS_Pap
 ---
 
 *Journal updated: September 20, 2026*
+
+---
+
+## 📁 SESSION: September 21, 2026
+**Focus:** Verifying the 13 candidate papers — real DOIs and arXiv links, no guessing
+
+---
+
+### All 13 Candidates Independently Re-Verified
+
+The first agent's stopped/cancelled run from the previous session was confirmed dead (explicitly stopped, not resumable — the second parallel run from Sept 20 already covered the same ground, so nothing was actually lost). Ran a fresh, targeted verification pass on the 13 candidate papers found Sept 20: for each one, confirmed the verbatim title, full author list, real DOI (via Crossref API where applicable), and real arXiv link (via direct arXiv API queries, not web-search summaries) — or confirmed genuinely no arXiv preprint exists, checked by querying the arXiv API directly rather than assuming absence from a search result.
+
+**Final tally:** 1 of 13 has both a DOI and an arXiv preprint (#6, the ACM TOIT paper). 4 have a DOI but no arXiv version exists at all (#1 Okafor 2026, #7 AlertSAGE, #8 the RL-for-network-security survey, #9 DRL-MD) — all four confirmed arXiv-absent by direct API query, not inferred from a missed search. 8 are arXiv preprints with no publisher DOI yet (expected — several are recent 2026 submissions still pending venue acceptance).
+
+**Two discrepancies flagged, not silently fixed** (same discipline as every prior integrity pass):
+- Paper 6's arXiv-listed title reads "Human AI Collaboration," no hyphen — task input had "Human-AI." Very likely a typographic variant of the ACM-published form (authors/DOI/abstract all match exactly), but left unresolved rather than assumed.
+- Paper 8's title is stored in sentence case on Crossref/ScienceDirect ("network security," "comprehensive" lowercase) vs. title case as given — same likely-benign-formatting caveat, flagged rather than normalized.
+
+**One unresolved gap:** AlertSAGE's (#7) authors are recorded as initials-only everywhere searched, including Springer's own chapter page — full given names could not be recovered from any source.
+
+Full table with every link: given directly to the team in-session; not yet copied into `ARSS_Literature_Session_Notes.md` as a permanent record — worth doing before these details are needed again.
+
+### What's Next
+
+- [ ] Copy the verified 13-paper table (with DOIs/arXiv links) into `ARSS_Literature_Session_Notes.md` as the permanent record
+- [ ] Decide which 5-6 of these actually earn a spot in the formal `ARSS_Paper.tex` bibliography
+- [ ] Resolve the two flagged title discrepancies (#6, #8) before citing either formally — quick confirms, not blockers
+- [ ] Everything else carried over from Sept 20 (rubric, signed-doc decision, `Fawad Sign.pdf`, model file changes) still stands
+
+---
+
+*Journal updated: September 21, 2026*
 *Covers: literature search expansion, RL primer, GitHub sync*
 
 > **The Bottom Line:** The team can now actually read a paper abstract and know what it's claiming — that was the missing piece, not more papers. Homayoun's reward-taxonomy gap is confirmed and citable; its state/action space stays an open question behind a paywall. Everything that existed only on one laptop for months now lives on GitHub too.
+
+---
+
+## 📁 SESSION: September 21, 2026 (continued)
+**Focus:** Closing the "never independently re-verified" gap on the 4 legacy Chavali/Wang citations
+
+---
+
+### The Most Serious Citation Error Found on This Project So Far
+
+Ran a dedicated deep-verification pass on SAC-AP, TD3-AP, KNAP, Multi-Critic, and AlertPro — the five papers that had been cited on trust from the original, since-proven-unreliable April 2026 compilation and never independently re-checked, despite two prior integrity audits fixing errors everywhere else.
+
+**TD3-AP's DOI was simply wrong — not mistitled, wrong.** The DOI recorded everywhere in this project (`10.1016/j.cose.2024.103893`) resolves, per Crossref, to a completely unrelated paper by different authors on a different topic (an intrusion-classification methodology comparison by Bingu et al.). The correct DOI is `10.1016/j.cose.2024.103854` — almost certainly a single-digit transposition typo (893 vs. 854) made once, early, and copied forward into every document since without anyone clicking through. This is categorically worse than the prior title/figure errors: a title paraphrase is a paraphrase, but a wrong DOI sends a reader — including a panelist — to a stranger's paper entirely. Corrected in `ARSS_Paper.tex`, `ARSS_Literature_Review.md`, `ARSS_Research_Findings.md`.
+
+**AlertPro was substantially mistitled**, not just paraphrased loosely. Real title (three-way confirmed via Crossref, Semantic Scholar, and dblp): "Combating alert fatigue with AlertPro: Context-aware alert prioritization using reinforcement learning for multi-step attack detection." What was recorded — "AlertPro: Context-Aware Reinforcement Learning for Alert Prioritization" — dropped both the paper's actual framing and its actual technical scope (multi-step attack detection specifically, not generic alert prioritization). Corrected everywhere, full author list corrected from "et al." too.
+
+**KNAP and Multi-Critic both had real, if less severe, title errors** — both missing their real subtitles ("...to Prioritize Alerts Generated by Intrusion Detection Systems" / "...in Intrusion Detection Systems"). Corrected. **KNAP also has an open, unresolved concern**: this paper's own text describes it as improving "sample efficiency," but secondary sources (primary abstract still paywalled — Springer login wall) describe its actual headline contribution as three defender-knowledge-level variants (D-/S-/T-KNAP) with specific loss-reduction percentages — a possibly different framing than "sample efficiency." Flagged in all three docs as needing a primary-text recheck before the paper's Section III language is finalized, not silently rewritten on unconfirmed secondary information.
+
+**SAC-AP came through cleanest** — correct DOI, correct authors, and its 30%-vs-DDPG claim was confirmed directly from Semantic Scholar's primary abstract field (not a snippet). Only a minor title-prefix correction needed ("SAC-AP:" was dropped).
+
+**A structural note for future sessions:** primary abstract text was blocked on 4 of the 5 papers this pass — SpringerLink's explicit login wall for KNAP and Multi-Critic, ScienceDirect's HTTP 403 for TD3-AP and AlertPro. All quantitative performance figures for those four (dataset lists, percentage improvements) are currently **search-snippet corroborated only**, not primary-text confirmed, and are flagged as such inline in the docs. Getting real institutional/library access to pull these four PDFs directly remains an open task — the titles/DOIs are now solid, but the specific numeric claims attributed to them in ARSS's own paper aren't yet independently confirmed at the same standard as everything else.
+
+**Signed document impact:** `ARSS_Scope_Document_v2.md` still carries the old wrong TD3-AP DOI and the old mistitled AlertPro citation — left untouched per the standing rule. This brings the signed-document correction list to **6 items**: fabricated alert-volume stat, fabricated RADAMS figure, A2C citation mismatch, mistitled MITREtrieval, wrong TD3-AP DOI, mistitled AlertPro.
+
+A second, parallel task — checking whether any of the 16 unpublished-preprint citations have since been published, and searching for genuinely published alternatives to reduce reliance on preprints — was launched alongside this one and is still pending as of this entry.
+
+### What's Next
+
+- [ ] Reconcile the pending preprint-reduction agent run once it completes
+- [ ] Get real institutional access to KNAP, Multi-Critic, TD3-AP, and AlertPro's primary PDFs to confirm the still-snippet-only quantitative claims
+- [ ] Resolve KNAP's "sample efficiency" vs. "defender-knowledge-level variants" framing question against primary text
+- [ ] Signed document now has 6 items needing a supervisor conversation before Sept 28 — this list keeps growing and needs an actual decision, not just tracking
+- [ ] Everything else carried over from earlier Sept 21 entry still stands
+
+---
+
+*Journal updated: September 21, 2026 (continued session)*
+
+> **The Bottom Line:** The "never re-verified" pile is the pile that actually mattered most — a wrong DOI is a worse failure mode than a wrong title, because it doesn't just misdescribe a real source, it points the reader at someone else's paper entirely. That's fixed now. What's still open is real institutional access — four papers' actual numeric claims are still resting on search snippets, not primary text, and that gap won't close without a library login, not another search pass.

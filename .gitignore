@@ -16,6 +16,15 @@ training_checkpoints/
 # OS genera# System
 .DS_Store
 Thumbs.db
+~$*.doc
+~$*.docx
+~$*.xls
+~$*.xlsx
+~$*.ppt
+~$*.pptx
+
+# Local Claude Code tooling (skills, plugins) — not project source
+.claude/
 
 # Documentation (Local Only — uncomment to exclude)
 # docs/
