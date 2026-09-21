@@ -1,5 +1,3 @@
----
-
 # ARSS
 ### Category-Conditioned Deep Reinforcement Learning for MITRE ATT&CK-Grounded Autonomous SOC Alert Triage
 
