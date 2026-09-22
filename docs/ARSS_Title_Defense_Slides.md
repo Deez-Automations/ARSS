@@ -160,12 +160,18 @@ This grounding operates at the **tactic level**, not the individual-technique le
 
 # Dataset
 
+**Why a lab-built benchmark, not real company traffic**
+
+Controlled testbed datasets are the established methodology across this entire research area — real attack tools run deliberately against real lab infrastructure, producing broader and more reproducible attack coverage than any single real-world network could safely provide. This is standard practice across the literature already cited (TD3-AP evaluates on MQTT-IoT-IDS2020, DARPA 2000, CSE-CIC-IDS2018), not a workaround unique to this project.
+
 **CIC-IIoT 2025** — Canadian Institute for Cybersecurity, University of New Brunswick
 
 - 685,000 samples, 71 features, 7 attack categories
-- A controlled-lab testbed dataset — real attack tools run against real infrastructure, not synthetic company data and not real production traffic either
-- Real production network data is confidential by nature, which is exactly why the field builds controlled testbed datasets instead of using company data
-- Same family of dataset used across the surveyed literature (TD3-AP evaluates on MQTT-IoT-IDS2020, DARPA 2000, CSE-CIC-IDS2018) — this is standard practice in the field, not a workaround unique to this project
+- **Sensor and network traffic captured together, synchronized in real time** — not network packets alone. Most prior benchmarks (including CICIDS2017) capture only network flow; this dataset also records physical IoT sensor behavior at the same moments, a more realistic picture for IIoT-specific attacks
+- **The 71 features were derived through deliberate multi-objective feature selection**, not a raw, unfiltered export — the dataset's own methodology validates which measurements are actually informative before publication
+- From the same research group behind CICIDS2017, CIC-IDS2018, and CIC-IoT2023 — an established, independently scrutinized testbed methodology, not a first-time effort
+- Peer-reviewed (*Electronics*, 2025) prior to publication
+- 7 clearly separated attack categories, each mappable to a MITRE ATT&CK tactic — a direct structural fit for this project's category-conditioned design
 
 ---
 

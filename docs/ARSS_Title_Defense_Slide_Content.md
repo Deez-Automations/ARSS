@@ -193,12 +193,17 @@ RL Response Agent (DQN)
 ## SLIDE 14 — Dataset
 
 **On slide:**
+> **Why a lab-built benchmark, not real company traffic:** controlled testbed datasets are the established methodology across this research area — real attack tools run deliberately against real lab infrastructure, producing broader, more reproducible attack coverage than any single real-world network could safely provide. Standard practice across the literature already cited (TD3-AP: MQTT-IoT-IDS2020, DARPA 2000, CSE-CIC-IDS2018), not a workaround unique to this project.
+>
 > **CIC-IIoT 2025** — Canadian Institute for Cybersecurity, University of New Brunswick
 > - 685,000 samples, 71 features, 7 attack categories
-> - A controlled-lab testbed dataset with real attack tools run against real infrastructure — not synthetic company data, not real production traffic either
-> - Same family of dataset used across the surveyed literature (TD3-AP: MQTT-IoT-IDS2020, DARPA 2000, CSE-CIC-IDS2018)
+> - Sensor and network traffic captured together, synchronized in real time — not network packets alone, unlike most prior benchmarks (including CICIDS2017)
+> - The 71 features were derived through deliberate multi-objective feature selection, not exported raw and unfiltered
+> - From the same research group behind CICIDS2017, CIC-IDS2018, and CIC-IoT2023 — an established, independently scrutinized testbed methodology
+> - Peer-reviewed (*Electronics*, 2025) prior to publication
+> - 7 clearly separated attack categories, each mappable to a MITRE ATT&CK tactic — a direct structural fit for this project's category-conditioned design
 
-**Say:** If asked why not real company data — real network data is confidential by nature; this is exactly why the field builds controlled testbed datasets instead, and CIC's datasets are what the rest of the literature you're citing uses too, not a workaround unique to this project.
+**Say:** Lead with the substance (sensor+network fusion, curated feature selection, established lab lineage), not "confidentiality made us do it" — that's true but sounds like an excuse if it's the *first* thing said. If pushed on why not real company data specifically, then explain: real network data is confidential by nature, which is exactly why the field builds controlled testbed datasets instead — but that's the second sentence, not the opening one. Be honest if asked about maturity: this dataset is newer than CICIDS2017, so it has fewer independent papers that have stress-tested it — a real, fair tradeoff for being more realistic and better-matched to the project, not something to hide.
 
 ---
 
