@@ -206,6 +206,20 @@ What does **not** get delivered, stated plainly: no enforcement actions — that
 
 **SIEM integration, added as a real delivery goal:** the aim is broad, not narrow — integratable with as many SIEM platforms as realistically possible. Real friction (authentication requirements, platform-specific quirks) will only be fully known once that work starts, but the goal itself is full coverage, so it doesn't become a blocker later.
 
+### Follow-up — why "triage," and offline RL explained properly
+
+*Team: "the 5 triage are good but why call it triage what is a specific definiation of triage , also explain offline RL properly , i couldnt get it"*
+
+**What "triage" actually means:** a medical term, from the French *trier* — to sort or sift. The formal definition: the process of sorting cases by urgency and severity when there isn't enough time or people to treat everyone immediately, so the most critical cases get attention first and the rest wait in order of how much they actually need it. It comes from battlefield and emergency-room medicine — a nurse at the front of an ER doesn't treat anyone, they decide who gets seen now, who can wait, and who needs a doctor immediately, because there are more patients than staff. That's exactly the shape of this problem: alerts arrive faster than analysts can review them, and someone has to sort them by urgency under that same limited capacity. "Alert triage" is already the standard industry term for this function — not a borrowed metaphor, the literal, accurate word.
+
+**Offline RL, explained fully this time — the first pass was too compressed:**
+
+*RL, the basic idea first:* learning through trial and error, like training a dog with treats. The system takes an action, sees what actually happens, gets a score for how good or bad that outcome was, and adjusts future behavior to get better scores over time. The key part: it reasons about *chains* of decisions, not one in isolation — closing this alert now changes how backed up the queue is for the next one, which changes what the right call is then, and so on.
+
+*What "offline" specifically means:* normal ("online") RL learns by trying things live — take an action, see the real result right now, learn, repeat. **Offline RL learns entirely from a fixed batch of past records instead, and never tries anything live during training.** Picture a logbook from the last three months: every alert that came in, what a human decided to do with it, how busy the team was at that moment, and whether that decision turned out to be right. Offline RL studies that whole logbook and works out a better strategy purely from analyzing it, without ever experimenting on a real alert while still learning.
+
+*Why this is the sensible choice here:* an AI that's still learning cannot be allowed to make live trial-and-error decisions on a real company's real alerts — a bad guess during "learning" could mean missing an actual attack. Offline RL avoids that entirely: all the learning happens beforehand, from historical records, before it's ever trusted with a live decision. This is exactly what the SIEM timestamp idea from the earlier follow-up would feed — that reconstructed historical logbook is precisely offline RL's training material.
+
 ---
 
 ## Running Checklist of Parked Design Work
