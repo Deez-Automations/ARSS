@@ -936,3 +936,249 @@ A second, parallel task — checking whether any of the 16 unpublished-preprint 
 *Journal updated: September 21, 2026 (continued session)*
 
 > **The Bottom Line:** The "never re-verified" pile is the pile that actually mattered most — a wrong DOI is a worse failure mode than a wrong title, because it doesn't just misdescribe a real source, it points the reader at someone else's paper entirely. That's fixed now. What's still open is real institutional access — four papers' actual numeric claims are still resting on search snippets, not primary text, and that gap won't close without a library login, not another search pass.
+
+---
+
+## 📁 SESSION: September 21, 2026 (professor practice-defense session)
+**Focus:** Real, hard questions from the supervisor — working out genuinely defensible answers, not rehearsed ones
+
+---
+
+### Context
+
+The team brought back five real questions the professor asked in a practice/clarification session, each aimed at a specific soft spot: the dataset choice, the "novelty" of the action space, the choice of RL over supervised ML, the word "design" applied to the state space, and the overall novelty statement. Worked through each one properly rather than defending the existing framing reflexively — two of the five (the action-space claim and the "design the state space" wording) turned out to have a real, fair criticism underneath that's worth fixing in the actual materials, not just answering around.
+
+### Q1 — Dataset justification
+
+Settled answer: CIC-IIoT 2025 chosen because (a) confidentiality is why the whole field uses lab-generated benchmarks instead of real company data — not unique to this project; (b) it comes from the Canadian Institute for Cybersecurity (UNB), the same group behind CICIDS2017/CIC-IDS2018/CIC-IoT2023, giving a track record of consistent, credible methodology; (c) it's the most current IoT-relevant public option — KDD99/NSL-KDD are now considered outdated/methodologically weak citations, CICIDS2017 predates modern IoT attack patterns; (d) it matches the exact same class of dataset every cited competitor paper already uses (TD3-AP: MQTT-IoT-IDS2020, DARPA 2000, CSE-CIC-IDS2018) — comparable footing, not a workaround.
+
+### Q2 — "IDS/IPS already take these actions — what's novel?"
+
+**This one required a real concession first.** If the pitch is "we invented new actions," that's wrong and deserves the pushback it got — IPS already blocks, SOAR already automates via playbooks. The corrected claim: the four actions (Ignore/Log/Block/Isolate) aren't novel, but *what decides which one fires* is — a policy trained from outcomes vs. a static rule or hand-written playbook that never changes unless a human edits it. Landed on a clean analogy for the room: any thermostat can turn on the heat; the interesting part is what decided *when*, not the action itself. **Action item:** never again phrase the pitch as "new actions" — always "new decision mechanism, existing action vocabulary."
+
+### Q3 — "Why RL when any ML model recognizes patterns well?"
+
+Worked out the actually-correct, non-hand-wavy answer: classifying attack type has ground-truth labels available at training time; choosing the *right response* doesn't — its correctness is only knowable later, from the outcome, which no dataset can label in advance. Supervised learning needs an instant correct-answer label and simply cannot represent that delayed-consequence structure, regardless of pattern-recognition quality. The "just label what analysts would do" alternative is imitation learning, which hits the already-established Charlotte AI ceiling (replicates historical decisions and their biases, cannot discover better ones). This is the one-sentence answer to memorize verbatim, not reconstruct live in the room.
+
+### Q4 — "State spaces are always there — how can you 'design' one?"
+
+**A fair, technically correct catch, partially conceded.** The true underlying state of a live network is real and not invented by anyone. What ARSS actually builds is a **state representation** (or observation) — a chosen, finite slice of that much larger reality, handed to the agent as input. Every applied RL system makes this same choice; it's legitimate, standard practice, just not correctly named in the current materials. **Action item:** replace "design the state space" with "design the state representation" / "define the observation space" across slides and the paper — a small wording fix that removes a real objection entirely.
+
+### Q5 — Novelty isn't convincing as currently stated
+
+The hardest one. Professor is right that listing three differences reads as a checklist, not an argument, and doesn't answer "why does anyone care." Also directly asked: if an active research chain (SAC-AP → TD3-AP → KNAP → Multi-Critic → AlertPro → RADAMS → L2DHF → Homayoun, 2022-2026) already exists, how is this novel?
+
+**Reframe worked out this session:** the chain's existence isn't evidence against novelty — it's evidence the problem is real and has had sustained expert attention, which makes a gap that survived six-plus iterations across four years *more* significant, not less. The fix is presenting one underlying mechanism with three symptoms, not three independent bullet facts: every existing system either (1) doesn't know enough (collapses attack type into one risk number, so a Recon scan and a Credential-Access attack at the same score are indistinguishable to the agent), (2) trusts an ungrounded signal (an invented, uncheckable reward), or (3) never finishes the decision (outputs a ranking, leaves the actual call to a human). ARSS's three design choices are the direct, causal repair for each specific symptom, not three unrelated differences. **Action item:** rewrite the novelty section of the paper and defense slides around this causal framing before Sept 28 — the current "three things together" phrasing needs to go.
+
+### What's Next
+
+- [ ] Rewrite the novelty statement (paper + slides) around the "one mechanism, three symptoms" framing
+- [ ] Fix "design the state space" → "design the state representation" everywhere it appears
+- [ ] Rework the action-space slide to lead with the concession (same actions, different decision mechanism) rather than implying new actions
+- [ ] Memorize the Q3 (why RL) answer verbatim — it's precise and shouldn't be reconstructed live under pressure
+- [ ] Everything carried over from the Sept 21 continued-session entry still stands
+
+---
+
+*Journal updated: September 21, 2026 (professor practice-defense session)*
+
+> **The Bottom Line:** Two of these five questions weren't just hard to answer — they were right. The action-space claim was overstated and the state-space wording was imprecise, and both are now fixed at the source rather than argued around. The other three needed sharper, more causal reasoning, not new facts — everything needed to answer them was already true, it just wasn't argued well yet. That's the difference between having done the work and being able to defend it.
+
+---
+
+## 📁 SESSION: September 23, 2026
+**Focus:** A major architectural realization — Block/Isolate as raw enforcement actions may be the wrong layer entirely
+
+---
+
+### The Realization
+
+After a conversation with friends and the supervisor, the team identified a real architectural problem: Block and Isolate, as ARSS's action space, are **enforcement-layer** actions (executed against live network traffic or a live device), not naturally **alert-triage-layer** decisions (deciding what to do with an alert given limited analyst attention). The two layers had been conflated since the April redesign.
+
+**One nuance worth recording precisely, since the initial framing overstated it slightly:** it is not literally true that "an alert can never lead to an action" — real SOAR platforms already trigger enforcement (isolate via EDR API, block via firewall API) from an alert, so that mechanism does exist in practice. The sharper, more defensible version of the realization: the *natural* job at the alert-triage layer is allocating scarce human analyst attention — prioritize, escalate, defer, dismiss, request enrichment — not deciding raw network actions. This reframing has real strength behind it independent of the discomfort that prompted it: every piece of prior work ARSS is already positioned against (RADAMS, AlertPro, SAC-AP/TD3-AP/KNAP/Multi-Critic, L2DHF, Homayoun) is already, at its core, about attention/priority allocation, not enforcement. Moving ARSS onto that exact ground both fixes the layer-conflation problem and sidesteps the recurring "isn't this just IDS/IPS" criticism by construction, since human-analyst attention allocation isn't something IDS/IPS/EDR do at all.
+
+**New candidate framing, explicitly NOT yet confirmed as the gap:** adaptive decision-making for alert triage under analyst capacity limits — routing/prioritization that responds to current analyst backlog and workload, not just to properties of the alert itself. Team's own explicit standing principle going forward: **problem first, method second** — RL stays a candidate mechanism, not a forced conclusion; if a different technique (bandits, queueing theory, scheduling, supervised ranking) turns out to be the natural fit once the problem is actually understood, that's the honest outcome to follow, not a result to avoid.
+
+**Scope constraint stated explicitly by the team:** whatever gets proposed needs to be substantial enough to justify three people working for one year — not a narrow idea stretched thin to look like a full FYP.
+
+### Research Launched (evidence-gathering before any decision)
+
+Two agents launched in parallel, both explicitly instructed not to presuppose RL or any conclusion:
+1. **Commercial + open-source SIEM/SOAR survey** — what Splunk, Microsoft Sentinel, IBM QRadar, Cortex XSOAR, Google SecOps, CrowdStrike, Elastic Security, Wazuh, TheHive+Cortex, Security Onion, Graylog, and Shuffle actually take as input for alert decisions, whether any of them incorporate analyst feedback or adapt over time, and specifically whether any explicitly model analyst capacity/workload as a decision factor.
+2. **Fresh 2025-2026 literature search** — specifically hunting for work framing alert triage around analyst capacity/workload as a first-class factor, and any non-RL methods (bandits, queueing theory, scheduling) already applied to this exact problem, to genuinely test whether RL is the right tool or just the one already in hand.
+
+Both pending as of this entry.
+
+### Timeline Tension (flagged, not resolved)
+
+Title defense is ~September 28 — five days from this entry. A genuine re-scoping of the core research problem this close to a defense is high-stakes. Two live possibilities, not yet decided by the team: present this as a validated direction with an honest account of the live course-correction, or attempt to fully lock a new problem statement before the 28th. Needs a decision once the research above lands, not before.
+
+### What's Next
+
+- [ ] Reconcile both research agents once they land — do NOT decide the new framing until real evidence is in
+- [ ] Team decision on the timeline question above, once the evidence is in
+- [ ] If the analyst-capacity framing holds up: redefine the action space around triage decisions (prioritize/escalate/defer/dismiss/request-context) rather than enforcement primitives, and redo the novelty statement, system model, and MITRE-grounding argument accordingly — this would be a substantial rewrite of `ARSS_Paper.tex`, not a patch
+- [ ] Everything from the Sept 21 practice-defense session (novelty reframing, state-representation wording, action-space concession) still stands as guidance regardless of how this resolves, since those lessons apply to whatever the final framing turns out to be
+
+---
+
+*Journal updated: September 23, 2026*
+
+> **The Bottom Line:** This is the first time the pivot instinct has been "stop and gather real evidence before deciding" rather than "argue harder for what we already built" — that's a more mature research posture than anything that came before it, independent of how the evidence actually lands. Five days to defense makes this genuinely risky timing, and that risk is being named here rather than ignored.
+
+---
+
+## 📁 SESSION: September 23, 2026 (continued — both research agents landed)
+
+---
+
+### Consolidated Findings
+
+Both agents launched earlier this session are back. Notably, they converged independently on the same core prior art (the Shah et al. / Ghadermazi lineage) without any cross-visibility into each other's work — a real consistency signal, not a coincidence to dismiss.
+
+**Commercial/open-source platform survey (13 platforms checked directly against real docs — Splunk, Microsoft Sentinel, IBM QRadar, Cortex XSOAR, Google SecOps, CrowdStrike, Elastic Security, Wazuh, TheHive+Cortex, Security Onion, Graylog, OSSIM/AlienVault, Shuffle):**
+- **No platform's triage-decision logic (priority/escalation/disposition) responds to current analyst backlog.** Confirmed, not assumed, across all 13.
+- **The one real, shipped counterexample to have an answer ready for:** Cortex XSOAR's `less-busy-user` assignment mode is genuinely workload-aware — but it decides *who* handles a case, not *what happens* to the alert. Routing, not triage. Precise distinction to keep sharp if challenged.
+- Feedback loops are almost universally manual everywhere checked (a human edits rules/thresholds after the fact) — no automatic self-updating scoring loop found in any core product.
+- TheHive's own vendor (StrangeBee) explicitly names capacity as the core problem ("42% of alerts go uninvestigated simply due to capacity constraints") but their answer is better manual tooling, not an automated capacity-aware decision engine.
+- **Correction worth keeping:** Homayoun's "isolation cost" reward term most likely refers to enforcement-action cost, not analyst bandwidth — probably not capacity-aware at all, despite surface-level similarity to the new framing. Don't conflate these going forward.
+
+**Fresh 2025-2026 literature search:**
+- "Capacity-aware alert triage" in general is **not** novel — Shah et al. (2019, operations research/MIP) and Ghadermazi et al. (2024, ACM Digital Threats, ML + mixed-integer optimization) already put analyst capacity directly into the triage decision. Neither uses RL. This needs to be cited and positioned against honestly, not treated as untouched ground.
+- The narrower, still-open claim, independently confirmed by both agents: **a policy — RL or otherwise — that adapts triage decisions to real-time, live backlog changes, validated beyond a simulated queue.** A 2026 survey (arXiv 2605.08316) names this gap explicitly in its own words. Zero bandit-based attempts found anywhere. No RL paper found that conditions on live backlog as a state variable.
+- Even the best deployed industrial non-RL system checked (Microsoft's Adaptive Incident Prioritization, real production scale) does not model capacity either — this gap isn't just an academic blind spot.
+
+### Critical Unresolved Item — highest priority before anything gets locked into the paper
+
+Several load-bearing sources were only reached at abstract/snippet level on both agents' attempts, blocked by paywalls: **Ghadermazi et al. 2024 (ACM Digital Threats, DOI 10.1145/3644393), both ACM Computing Surveys papers (Jalalvand 2024, Tariq 2025 — likely already in the existing bibliography, needs a direct check for overlap, not assumed new), and a GMV CERT/SOC "learning to rank for alert triage" study.** These sit directly under the new central claim. Full-text verification of these three is now the single highest-priority action item — not optional, not deferrable, given how much of the new framing leans on them.
+
+### Recommendation Given the Timeline
+
+Not a full rebuild. The verified parts of the existing design — category-conditioned state, MITRE-tactic-severity reward grounding, the existing literature positioning — don't need to be discarded. The precise, achievable fix: redefine the action space away from raw enforcement (Block/Isolate) toward genuine triage-layer decisions, and add live analyst-backlog as a state input the policy conditions on. An evolution of the existing verified work, not a restart from zero — realistically achievable to articulate by Sept 28, unlike fully verifying three paywalled sources and rewriting the whole novelty argument from scratch in five days.
+
+For the defense itself: presenting this as the live, honest research process it actually was — a real architectural problem identified, real evidence gathered across 13 platforms and fresh literature, here's exactly where it lands and what's still unverified — is the safer and arguably stronger move than presenting a five-day-old, partially-unverified narrow claim as fully settled fact.
+
+### What's Next
+
+- [ ] Get full-text access to Ghadermazi et al. 2024, both ACM CSUR papers, and the GMV CERT/SOC study before locking any new framing into the paper
+- [ ] Cross-check whether Jalalvand 2024 / Tariq 2025 are already in the existing bibliography (very likely yes) before treating as new sources
+- [ ] Team decision (still open, carried over): present as live course-correction at the Sept 28 defense, or attempt a full lock beforehand
+- [ ] If proceeding: redefine the action space around triage decisions (not enforcement primitives) and add live analyst-backlog as a state input — scoped as an evolution of the existing design, not a rewrite
+- [ ] Keep the Cortex XSOAR `less-busy-user` distinction (routing vs. triage) ready as a specific, correct answer to the most likely "but doesn't X already do this" challenge
+
+---
+
+*Journal updated: September 23, 2026 (continued)*
+
+> **The Bottom Line:** Two independent research agents landed on the same prior art without seeing each other's work — that's real signal. The honest picture: the broad idea has non-RL precedent that must be cited, not claimed as novel; the narrow, real-time-backlog-adaptive version still looks genuinely open, but three of the sources that claim rests on are still unverified past a paywall. Five days is enough time to redefine the action space honestly. It is not enough time to fully verify three paywalled papers and pretend otherwise.
+
+---
+
+## 📁 SESSION: September 23, 2026 (continued — adversarial counter-example hunt complete)
+
+---
+
+### Context: An Explicit, Deliberate Correction to the Framing
+
+Team pushback, correctly taken: this is not a new problem statement or a rename — same registered ARSS title, sharper technical definition. Clean restated description locked in: ARSS sits above alerts, not on raw traffic (intelligence layer, not enforcement layer); receives SIEM alerts, triages, prioritizes, explains why, reduces noise, adapts over time from feedback. One open design question flagged, not yet answered: what exactly counts as "feedback" — direct analyst correction, or outcome-scored reward — since those imply different mechanisms.
+
+**A real, consequential design tension surfaced and recorded, not smoothed over:** the team wants to downgrade MITRE ATT&CK from "the reward's grounding mechanism" to "a small context feature." This is not cosmetic — the strongest, most independently-verified finding in the whole project (zero of 56 surveyed papers combine ATT&CK with RL) is specifically a finding about MITRE grounding the *reward*. If MITRE becomes a minor input instead, that finding stops being the load-bearing novelty pillar, and the backlog/capacity-adaptive angle has to carry that weight instead — which is thinner and, until this session, less independently verified. Recorded as an open trade the team needs to make consciously, not a free change.
+
+**Environment/dataset feasibility check, done directly rather than deferred:** CIC-IIoT 2025 contains no analyst-capacity or workload data of any kind — confirmed against its known feature set (network/sensor fusion only). Any backlog/capacity state variable requires a simulated layer built on top of the real network-derived alert stream, following the same precedent RADAMS already used (its "analyst stress" term was also a simulated function of alert arrival rate, not pulled from a labeled dataset). This keeps the eventual evaluation inside the same simulated-queue limitation the field's own 2026 survey already named as its current ceiling — an honest constraint to state plainly, not something to imply is solved.
+
+### Adversarial Gap Analysis — Final Result
+
+Per direct team instruction: actively tried to disprove the "real-time backlog-adaptive triage" gap rather than confirm it, applying the triage-vs-routing distinction rigorously to every candidate. Result is genuinely mixed, not a clean survival or a clean kill — recorded precisely rather than rounded in either direction:
+
+**The RL/bandit-specific claim held up completely, and was actively reinforced.** Zero RL or bandit methods found anywhere conditioning a triage decision on live backlog/capacity. Two new 2025-2026 RL papers found in this pass (Homayoun/ESORICS 2025, a 2026 offline-RL leakage-free-benchmark paper) both had the opportunity to include backlog/capacity in their design and explicitly did not — active reinforcing evidence, not just absence of counter-evidence.
+
+**The broader "any method" claim is genuinely dented, and the team needs to know this precisely, not vaguely:**
+- **Lázaro et al. 2026** (Springer AIAI, DOI 10.1007/978-3-032-30805-4_11, published July 2026) — real production data (63,410 alerts, 16 months, GMV CERT/SOC), 141 workload-derived features feeding a supervised classifier that decides whether to escalate an alert, with the paper's own stated finding that workload modeling measurably improves the escalation decision. This is a genuine triage decision using real capacity signal, published this year — the strongest near-counter-example found across all three research passes this session.
+- **Three specific, real differences keep this from closing the gap ARSS would target**, and need to be stated precisely, not glossed: (1) classifier, not RL/policy-based; (2) explicitly decision-support with the analyst in control, not autonomous action; (3) offline/retrospective validation, not a demonstrated live closed loop.
+- **Corrected gap statement going forward**: no RL/bandit-based, autonomously-acting policy, validated in a live closed loop, has been shown to condition triage on real-time analyst backlog. Not "no method has ever done this" — that version is now contestable and should not be used.
+
+**Two additional precise findings worth keeping on file:**
+- A previously-missed Shah et al. 2020 paper (IEEE TPDS) genuinely uses RL and genuinely conditions on live capacity — but routes alerts between different SOC *sites* in a distributed organization, not the alert's own priority. Same routing-not-triage pattern as Cortex XSOAR, confirmed again at a different granularity — the distinction itself is holding up under repeated, independent testing.
+- Microsoft Defender XDR shipped a real "Alert Tuning" feature (Jan 2026) that does auto-suppress/reopen — a genuine triage disposition — but driven by alert risk indicators, not analyst backlog. Fails the capacity-driven axis specifically, not the triage-vs-routing axis. Precise, ready answer if raised as a challenge.
+
+**Resolved from prior unresolved items:** the previously-flagged "GMV CERT/SOC study, paywalled, snippet-only" was a mis-tracked reference to a different, older Sandia paper with a similar generic title — corrected; it's actually the Lázaro 2026 paper above, now reasonably well-characterized via Crossref + a Springer preview (dataset size, date range, feature counts, key finding), though full text/references remain paywalled. Ghadermazi's dissertation remains embargoed, but the journal version's full verbatim abstract was retrieved directly (Gold OA metadata, though the PDF itself still 403s) — confirms and sharpens prior snippet-level knowledge (60.16% backlog reduction figure now abstract-confirmed, not just snippet-triangulated).
+
+### What This Means for the Three Candidate Directions
+
+Not discarded. Direction 1 (RL policy conditioned on live backlog) is untouched by Lázaro's finding, since Lázaro never trains or evaluates a policy. Direction 2 (noise-reduction vs. baseline) gets meaningfully stronger: a Lázaro-style supervised-classifier baseline is now a legitimate, real, 2026-dated comparison point for evaluation, not a synthetic strawman.
+
+### What's Next
+
+- [ ] Team decision on the MITRE-downgrade trade-off — flagged, not resolved, this session
+- [ ] Pin down what "feedback" means mechanically (direct analyst correction vs. outcome-scored reward) before it goes further
+- [ ] Decide whether to pursue full-text access to Lázaro et al. 2026 given how central it now is to the gap statement's precise wording
+- [ ] Gap-analysis phase is now substantively complete across three independent, adversarially-framed research passes — architecture-level next steps are unblocked per the team's own stated condition ("no redesign until the gap analysis proves something's missing"), pending the team's review of this consolidated finding
+- [ ] Everything carried over from earlier Sept 23 entries (timeline decision, action-space redefinition direction) still stands
+
+---
+
+*Journal updated: September 23, 2026 (adversarial gap analysis complete)*
+
+> **The Bottom Line:** Asked to actively try to prove itself wrong, the research did exactly that, and came back with a real, honest, mixed answer instead of either extreme. The RL-specific gap is now more solid than it was this morning, reinforced by papers that could have closed it and chose not to. The broader claim had to be narrowed because a real 2026 paper exists that does something close — and the team now knows exactly, precisely, in three stated points, why it isn't the same thing. That precision is worth more than either an unchecked "we're first" or a panicked "someone already did it."
+
+---
+
+## 📁 SESSION: September 23, 2026 (full reset — decision made)
+
+---
+
+### The Trigger
+
+Team explicitly rejected incremental patching of the existing ARSS architecture as forced novelty — "most or even more part has been done and researched... creating something so forced and begged to be novel." Demanded a full first-principles reset: treat the current architecture as disposable, do not assume RL, do not assume the existing gap is valid, do not start coding. A ten-phase adversarial research brief was issued and executed across this session: current-project teardown (done directly), two independent triage/capacity-aware gap analyses, one adversarial counter-example hunt, a closed-loop-response literature maturity check, a response-execution commercial product teardown, and an evaluation-environment feasibility check — six research passes total across this reset.
+
+### Phase 1 Finding — What Was Actually Wrong (undefended teardown)
+
+The core conflation, confirmed at the document level: the signed scope document's own "Out of Scope" section excludes live SIEM/IPS integration, while the action space (Block/Isolate) presumed exactly that integration exists — a direct, written self-contradiction, not just a conceptual tension. The evaluation plan was quietly triage-shaped the whole time (autonomous-handling rate, false-negative/positive rates — all triage metrics) while the action vocabulary insisted on enforcement. The reward function scalarized two different pipeline layers (containment = enforcement-layer, workload = triage-layer) into one number, obscuring which was actually being optimized. Multiple components (DQN, the MITRE-as-reward design, the LLM narrative layer, CIC-IIoT 2025 itself) were identified as technology/dataset choices made first, with justification assembled afterward — not derived from a clearly-stated problem.
+
+### Two Candidate Directions, Tested Adversarially — Final Verdict
+
+**Direction A — Closed-loop autonomous response execution: FROZEN, not pursued.**
+- Academically saturated: a sustained, single-group research program (Hammar et al., KTH, ~2021-2026) has already published provably-optimal response strategies, tree-search/counterfactual consequence prediction before acting, multi-objective collateral-damage modeling, and strategies validated against an *adapting* attacker on emulation testbeds — not just simulation. A Jan 2025 ACM Computing Surveys systematic review of this exact literature does not list closed-loop adaptation as a remaining gap.
+- Commercially: confirmed absent everywhere checked (13+ platforms) — every real product is a fixed human-authored playbook, or single-action autonomy gated by static config; the one partial exception (Microsoft Defender XDR's Automatic Attack Disruption) uses real ML only to decide *when* to trigger a fixed action, never verifies real-world effect, never models collateral cost. But this is a technology-transfer/deployment gap, not a research gap — not something a 3-person FYP can claim as its own contribution.
+- Environment check: CAGE Challenge 2 / CybORG++ is a genuinely practical, well-precedented evaluation environment (pip-installable, real consequence mechanics, published baselines) — but a good environment does not manufacture novelty against research that's already provably optimal. CIC-IIoT 2025 confirmed structurally incompatible with this direction regardless (no state-transition function — attack labels were generated by a fixed script regardless of any hypothetical response, so no way to recover "what if a different action had been taken").
+- Two narrow academic threads remain technically open (LLM-agentic response validated against a reactive environment rather than static log replay; collateral-damage-model fidelity validated against real operational data) but both are thin, one likely infeasible for FYP scope without real operational data access.
+
+**Direction B — Capacity/backlog-adaptive alert triage: SURVIVED, now the adopted direction.**
+- Real, narrow gap confirmed independently by two separate research passes, one explicitly adversarial (instructed to try to kill it, not confirm it): an autonomously-acting policy — RL, bandit, or otherwise — that conditions its triage decision on *live*, real-time analyst backlog, validated beyond a simulated queue. Broad "capacity-aware triage" is not novel (Shah 2019, Ghadermazi 2024, both non-RL/optimization-based) and must be cited honestly, not claimed as untouched. The closest 2026 near-counter-example (Lázaro et al., GMV CERT/SOC) is real, uses production data, and shows workload features improving a genuine triage decision — but it's a supervised classifier advising a human, evaluated offline, not an autonomously-acting policy validated live. That precise, three-point distinction is the thing to keep sharp, not a vague "nobody's done this."
+- No bandit-based attempt found anywhere for this exact problem — a second, independently confirmed open thread.
+
+### The Adopted Redesign
+
+**New framing:** an adaptive SOC triage/response-decision system whose behavior changes with current SOC operational workload — not "RL chooses Block or Isolate," but "given this alert, its risk, and current SOC state, what should happen to it right now."
+
+**New state:** alert understanding (severity, attack type, confidence, asset importance, temporal context) + SOC state (queue depth, oldest-alert age, severity distribution, analyst availability/current workload). **New action space:** Auto-close / Defer-queue / Escalate-review, closing a loop through analyst feedback back into policy adaptation. **Safety mechanism:** a severity floor — critical/high alerts can never be auto-suppressed regardless of workload pressure; medium alerts are where the actual policy operates; the contribution is explicitly framed as the *dynamic workload adaptation inside that safety envelope*, not the floor itself.
+
+**Method commitment — "problem first, method second," made concrete as an actual experimental ladder, not a slogan:** static threshold → supervised classifier → learning-to-defer → contextual bandit/offline policy → offline RL, compared empirically rather than RL assumed from the start.
+
+**Primary research question:** can an adaptive alert-triage policy incorporating real-time SOC workload state reduce analyst workload while maintaining a fixed level of protection against high-severity threats? **Falsifiable hypothesis:** a workload-aware adaptive triage policy reduces analyst review burden during high-load periods without a statistically significant increase in missed high-severity alerts, versus workload-independent baselines. Stated so it can fail, not just succeed.
+
+### What's Kept vs. Removed
+
+**Kept, repositioned:** the two-stage detector (92.34%/92.83%, real evaluated work) — now an alert-generation/sensing module feeding the experimental alert stream, not the center of the contribution. CIC-IIoT 2025 — still useful for generating realistic attack/benign alert characteristics, not as a closed-loop environment. MITRE ATT&CK — demoted to optional severity/risk context, not the reward. The dashboard.
+
+**Removed:** Block/Isolate as ARSS's own actions (the original conflation). The LLM explanation layer and the SHAP→LLM→RL narrative architecture as claimed research contributions (may survive later as an interface feature, not as thesis-central). MITRE-as-the-reward specifically.
+
+**Explicitly not yet started:** no code changes. Team's own instruction, several times over: understand and decide first, build second.
+
+### One Unresolved Verification Flag, Carried Forward
+
+The redesign proposal cites specific findings from the 2026 offline-policy-learning paper (Okafor, ScienceDirect, DOI 10.1016/j.mlwa.2026.100984) — that some offline RL methods degenerate while recurrent behavioral cloning performs strongly, and that it uses a severity-floor precedent — more specifically than anything this session's agents could verify (every access attempt hit a paywall; only metadata/snippet-level confirmed). These claims may be accurate if read from a source outside this session's research, but per the project's own standing citation-verification discipline, they need primary-text confirmation before becoming load-bearing, citable facts in the actual paper — flagged, not yet resolved.
+
+### What's Next
+
+- [ ] Verify the specific Okafor 2026 claims (degeneration finding, severity-floor precedent) against primary text before citing them
+- [ ] Formalize this decision into the full research-decision document structure (executive verdict, gap comparison table, 12-month roadmap) once requested
+- [ ] Rewrite `ARSS_Paper.tex`, the scope document, and the slide decks around the new framing — not started, deliberately, pending the team's go-ahead
+- [ ] Everything from the pre-reset session (citation fixes, defense-readiness Q&A, the RL primer) remains factually valid background material; the parts specifically describing Block/Isolate/MITRE-as-reward as the core contribution are now superseded and need updating wherever they appear
+- [ ] Title defense is ~5 days out — the timeline tension from earlier in the day is now sharper, not resolved: this is a genuine reset, decided with real evidence, landing days before a defense
+
+---
+
+*Journal updated: September 23, 2026 (reset decision recorded)*
+
+> **The Bottom Line:** Told to treat five months of work as disposable and find out what's actually true, the process did exactly that — six research passes, two directions tested adversarially, one frozen with reasons precise enough to defend, one kept with reasons precise enough to defend differently. The new direction is smaller, sharper, and actually falsifiable, which is a better place to stand in front of a panel than a bigger claim that doesn't survive contact. What's not resolved is time — this landed five days before the defense, and that's the real risk now, not the research.
