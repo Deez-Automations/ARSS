@@ -1215,3 +1215,41 @@ FYP coordinator email received: Presentation 1 (Title Defence) window is Sept 28
 *Journal updated: September 24, 2026*
 
 > **The Bottom Line:** The deadline closing the door on further registration-level changes turned out to remove a real source of churn, not just add pressure — there's now one direction, committed to, with a clear standard attached to it: actually good, not just good-sounding. Everything left is execution.
+
+---
+
+## 📁 SESSION: September 24, 2026 — System design walkthrough, section by section
+
+---
+
+### What happened
+
+Team asked for a structured, section-by-section understanding pass on the locked direction — problem, solution, mechanics, differentiation, open risks, deliverables — with follow-up questions at each step before moving on, no polish, plain explanations only. Full transcript compiled as its own document: `docs/ARSS_System_Design_Walkthrough.md`.
+
+### What actually got tested and fixed during it
+
+Several real corrections happened, not just Q&A — worth noting here since they change the system's actual design, not just how it's explained:
+
+- **The comparison against existing tools was imprecise and got fixed.** SOAR platforms don't just score alerts, they also take real enforcement actions via playbooks. The corrected claim: it's not "they don't act, we do" — it's that whatever they do, scoring or acting, is fixed once configured and doesn't respond to current team workload. That's the actual, narrower, correct gap.
+- **The real-data validation claim got deliberately softened.** The system is intended to work against real SOC data, following Lázaro et al.'s approach, but won't be tested that way — a student project can't realistically get live company alert access. Stated as an honest limitation, not hidden or oversold.
+- **Two real, unresolved system-design problems got surfaced and parked, not brushed past:**
+  1. Whether "Alert Understanding" should compute its own alert score or read/normalize metadata an upstream SIEM may have already attached — genuinely depends on deployment context, not decided yet.
+  2. The SOC-state counter as originally described (a bare incrementing/decrementing number) was correctly flagged as fragile and insufficient for something carrying the entire novelty claim. Needs multiple signals, periodic reconciliation against a ground-truth source, and bounds-checking — not a single naive counter trusted indefinitely.
+- **SIEM integration got elevated to a real deliverable, not a footnote** — both live ingestion across common formats (CEF, Syslog, Splunk HEC, Sentinel's API, Elastic Common Schema) and a genuinely good idea for solving the cold-start problem: SIEMs commonly log alert creation and resolution timestamps, which is enough to reconstruct historical queue-depth patterns after the fact and pre-calibrate the policy before it ever runs live, instead of learning a new SOC's rhythm from zero.
+- **"SOC behavior representation" got correctly reframed as human-behavior modeling**, not just an engineering counter — its own research area. RADAMS's "operator stress" concept (grounded in the Yerkes-Dodson law) is one real starting point already in hand, not enough on its own to finalize the design.
+- **The Gartner "40% of agentic AI projects canceled by 2027" statistic was checked against its actual primary source** and corrected — it's a general finding across all industries, not a security-specific one, as an earlier secondhand citation had implied.
+
+### The running checklist this produced
+
+Captured in full at the end of `ARSS_System_Design_Walkthrough.md` — five open system-design items to resolve together once the full section pass is complete, as its own dedicated design effort for the system-model part of the defense:
+1. Detector vs. upstream-metadata handling
+2. Robust SOC-state measurement (multi-signal, reconciled, bounds-checked)
+3. Broad SIEM integration, live and historical
+4. Proper research grounding for human-behavior/workload representation
+5. Whether "agent" applies in the strict technical sense, pending which method wins the five-way comparison
+
+---
+
+*Journal updated: September 24, 2026 (design walkthrough recorded)*
+
+> **The Bottom Line:** Walking through the whole system out loud, one section at a time, caught real things a polished pitch would have glossed over — an imprecise comparison claim, an overclaimed data-validation story, and a genuinely fragile piece of the core novelty mechanism. None of it was fatal. All of it is now on record, parked deliberately rather than patched hastily, with a clear list of what the actual system-design pass still owes.
