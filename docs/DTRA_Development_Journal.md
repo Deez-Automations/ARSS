@@ -1182,3 +1182,36 @@ The redesign proposal cites specific findings from the 2026 offline-policy-learn
 *Journal updated: September 23, 2026 (reset decision recorded)*
 
 > **The Bottom Line:** Told to treat five months of work as disposable and find out what's actually true, the process did exactly that — six research passes, two directions tested adversarially, one frozen with reasons precise enough to defend, one kept with reasons precise enough to defend differently. The new direction is smaller, sharper, and actually falsifiable, which is a better place to stand in front of a panel than a bigger claim that doesn't survive contact. What's not resolved is time — this landed five days before the defense, and that's the real risk now, not the research.
+
+---
+
+## 📁 SESSION: September 24, 2026 — Direction locked, no further resets
+
+---
+
+### Context
+
+FYP coordinator email received: Presentation 1 (Title Defence) window is Sept 28 – Oct 1, exact slot TBD. Format is a hard 10 minutes total — 5 minutes presenting, 5 minutes Q&A. Slides must be built against the Scope Document *and* the official rubric (still not in hand as of this entry — was promised early in this session, never actually shared, worth chasing down). Deadline for reporting a title/project/group-member change was the same day this entry covers; team's own read, after discussion: that deadline governs registration-level swaps (an entirely different project), not the kind of technical-approach refinement already done under the same registered title and problem area — and regardless, the window to file any such change is now closed.
+
+### The Decision
+
+**Workload-adaptive alert triage is now locked as the direction — no further ground-up resets.** Team's own words: "we stick to this and keep making it genuinely good... not just sound FYP level, make it work properly the way we want." This is a meaningfully different state than "adopted" (the Sept 23 entry) — that was a decision that could still be reopened; this is a commitment to execute.
+
+**The one-sentence version the team is standardizing on, worth keeping verbatim since it's now the canonical framing:**
+> "We're building a system that sits between a company's security alerts and the human security team, and instead of just ranking alerts by how dangerous they look, it also pays attention to how swamped the security team currently is — so it can be more careful about what it bothers a human with when they're overwhelmed, while still guaranteeing that genuinely serious threats never get missed just because it's a busy day."
+
+**Standard going forward, stated explicitly so it doesn't quietly erode under time pressure:** "genuinely good, not just sound FYP-level" means claims still get verified before they're used, the falsifiable hypothesis stays falsifiable rather than being softened into something that can't fail, and the one still-open citation flag (Okafor 2026's specific claims about offline-RL degeneration and its severity-floor precedent — never independently confirmed past a paywall by this session's own agents) gets resolved before it's treated as settled fact anywhere official, not smoothed over because the clock is short.
+
+### What's Actually Next
+
+- [ ] Build the actual 5-minute Presentation 1 deck around the locked direction — current slide files still describe the old Block/Isolate architecture and are far too long for a 10-minute slot regardless; needs a real rebuild, not a trim
+- [ ] Track down the official rubric — mentioned early this session, never received, and the coordinator's own email says slides should be built against it
+- [ ] Resolve the Okafor 2026 verification flag before it's cited anywhere official
+- [ ] `ARSS_Paper.tex`, the scope document's technical sections, and the existing slide decks all still describe the pre-reset architecture and need updating to match
+- [ ] No further reconsideration of the core direction — remaining time goes to execution and materials, not more research
+
+---
+
+*Journal updated: September 24, 2026*
+
+> **The Bottom Line:** The deadline closing the door on further registration-level changes turned out to remove a real source of churn, not just add pressure — there's now one direction, committed to, with a clear standard attached to it: actually good, not just good-sounding. Everything left is execution.
