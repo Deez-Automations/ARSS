@@ -1,0 +1,144 @@
+# ARSS — Facts and Figures Reference
+
+*Every citable number, value, and confirmed fact surfaced from the Section 1 system-design walkthrough onward — not the original literature review from earlier in the project (that's covered elsewhere). Organized by source, numbered for reference. Each entry states what was verified and how strongly (primary source read in full vs. abstract/snippet only), matching this project's standing rule: nothing gets cited without checking, after a wrong DOI and a fabricated statistic were both caught and fixed earlier in this project's history.*
+
+---
+
+## 1. The core problem (Section 1)
+
+1.1. **51%** of SOC teams report feeling overwhelmed by alert volume.
+1.2. Analysts resolve only **49%** of alerts assigned to them within a workday.
+— Tariq et al., *ACM Computing Surveys*, 2025. DOI 10.1145/3723158. [Verified against primary text.]
+
+1.3. **13+** major commercial SOC platforms checked directly against their own technical documentation — none let current team workload change what happens to an alert. (Splunk, Microsoft Sentinel, CrowdStrike, IBM QRadar, Elastic, Google SecOps, and others, from the project's earlier product-teardown research.)
+
+---
+
+## 2. Robust live-state tracking (research agent, SOC-state counter design)
+
+2.1. Kafka's consumer lag is computed as `log-end-offset (real, queried broker state) − committed-offset (locally tracked position)` — never trusted from the local position alone. — [Conduktor](https://www.conduktor.io/glossary/consumer-lag-monitoring), [Sematext](https://sematext.com/blog/kafka-consumer-lag-offsets-monitoring/)
+
+2.2. Industry argument that raw backlog *count* is a misleading metric on its own — a large-but-fast-draining queue is fine, a small-but-stalled one is the real problem; time-based lag (age of oldest unprocessed item) is the more reliable signal. — [WarpStream](https://www.warpstream.com/blog/the-kafka-metric-youre-not-using-stop-counting-messages-start-measuring-time)
+
+2.3. RabbitMQ's `messages_ready` metric is documented as a live-computed gauge from actual queue state, not an incremented/decremented counter. — [RabbitMQ docs](https://www.rabbitmq.com/docs/maxlength), [Datadog](https://www.datadoghq.com/blog/rabbitmq-monitoring/)
+
+2.4. **Recommended reconciliation cadence for a real deployment: every 60-120 seconds**, plus immediately after any service restart/reconnect — standard range for ticketing/monitoring polling and consumer-lag monitoring in practice.
+
+2.5. Azure's Event Sourcing pattern documentation gives a structurally identical worked example: a live incrementing/decrementing seat-availability counter under concurrent events, explicitly warning that without idempotency (deduplication by event ID), the projection drifts from the real event stream. — [Microsoft Learn, Event Sourcing pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/event-sourcing)
+
+---
+
+## 3. SIEM formats, metadata, and retention (research agent, SIEM integration)
+
+### 3.1 Severity/category/confidence fields, by platform
+
+3.1.1. **CEF**: severity as string (Unknown/Low/Medium/High/Very-High) or integer **0-10** (0-3=Low, 4-6=Medium, 7-8=High, 9-10=Very-High); mandatory `deviceEventClassId` as category ID; **no native confidence field**. — [Micro Focus CEF Implementation Standard](https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.4/pdfdoc/cef-implementation-standard/cef-implementation-standard.pdf)
+
+3.1.2. **Syslog (RFC 5424)**: severity is half of the PRI value (`facility×8 + severity`), **0=Emergency through 7=Debug** — no category, no confidence. — [RFC 5424](https://www.rfc-editor.org/rfc/rfc5424.html)
+
+3.1.3. **Microsoft Sentinel `SecurityAlert` schema**: `AlertSeverity` (Informational/Low/Medium/High), **`ConfidenceScore`** (real, **0.0-1.0**), `ConfidenceLevel` (string), `Tactics`/`Techniques` (MITRE ATT&CK mapping) — the closest real-world match to ARSS's own danger-score/category/confidence output. — [Microsoft Learn](https://learn.microsoft.com/en-us/azure/sentinel/security-alert-schema)
+
+3.1.4. **IBM QRadar** `GET /siem/offenses`: returns `severity`, `magnitude`, `credibility`, `relevance`, `categories[]`, `status` (OPEN/HIDDEN/CLOSED). Magnitude is explicitly computed *from* the severity/credibility/relevance combination. — [QRadar API reference](https://ibmsecuritydocs.github.io/qradar_api_20.0/20.0--siem-offenses-GET.html)
+
+3.1.5. **Splunk Enterprise Security Risk-Based Alerting**: `risk_score = impact_score × confidence_score` — documented worked example: impact 80 × confidence 70 → risk score **56**. — [Splunk RBA docs](https://help.splunk.com/en/splunk-enterprise-security-8/administer/8.6/risk-based-alerting)
+
+### 3.2 Retention periods, verified per platform (correcting a previously-used inaccurate "commonly 30-90 days" claim)
+
+| Platform | Verified default | Source |
+|---|---|---|
+| Splunk Enterprise (self-hosted) | `frozenTimePeriodInSecs` default = **188,697,600 seconds ≈ 6 years** | [indexes.conf reference](https://help.splunk.com/en/splunk-enterprise/administer/admin-manual/10.4/configuration-file-reference/10.4.0-configuration-file-reference/indexes.conf) |
+| Splunk Cloud Platform | **90 days** uncompressed, extendable via paid Archive | [Splunk Cloud Service Details](https://docs.splunk.com/Documentation/SplunkCloud/9.3.2408/Service/SplunkCloudservice) |
+| Microsoft Sentinel / Log Analytics | **90 days free**, extendable to **2 years (730 days)** at ~$0.10/GB/month | [Sentinel billing docs](https://learn.microsoft.com/en-us/azure/sentinel/billing) |
+| IBM QRadar (events/flows) | **30 days**, then deleted absent custom retention buckets | [QRadar 7.5 Data retention](https://www.ibm.com/docs/en/qsip/7.5.0?topic=tasks-data-retention) |
+| IBM QRadar (offenses) | Configurable up to ~2 years; specific default **unconfirmed** — flagged, do not cite without direct verification | — |
+| Elastic/Elasticsearch | **No platform-wide default** — indefinite if unmanaged; some subsystems (Kibana event log, APM) default to 90 days | [ILM overview](https://www.elastic.co/docs/manage-data/lifecycle/index-lifecycle-management) |
+
+### 3.3 Integration friction
+
+3.3.1. Microsoft Sentinel REST API: requires OAuth2 via Microsoft Entra ID app registration + client-credentials flow, plus an actual RBAC role grant — real IT-admin-mediated setup, not just an API key. Documented throttling around **10,000 items/minute** on at least the threat-intel indicator endpoint.
+
+3.3.2. IBM QRadar: SEC-token auth, no publicly documented numeric rate limit — IBM's own guidance is to avoid tight polling loops.
+
+### 3.4 Historical bootstrapping precedent
+
+3.4.1. Etcibasi, Dobos & Koksal, "Organizational Security Resource Estimation via Vulnerability Queueing," arXiv:2604.10250 (2026) — reconstructs organizational cyber-workload trajectories solely from bug-report/fix and discovery/patch timestamps, on real multi-year private enterprise cyber-ticket data, reporting **91-96% accuracy** estimating organizational resourcing from the reconstructed trajectory alone. [Verified: abstract read directly.] Confirmed as a real precedent for the timestamp-reconstruction technique itself — applying it to *pre-deployment policy calibration* (rather than after-the-fact resource estimation) appears to have no prior published precedent.
+
+---
+
+## 4. SOC workload representation (research agent, human-behavior modeling)
+
+### 4.1 RADAMS — Huang & Zhu [verified in full, read via arXiv HTML]
+
+4.1.1. *Computers & Security*, 2022. DOI 10.1016/j.cose.2022.102844.
+4.1.2. Stress level formula: `y_SL^t = f_SL(n^t)`, where `n^t` = alert arrivals during the *current inspection window* — a rate, not a static count.
+4.1.3. Experiments used synthetic 24-hour SOC shifts, **400 alerts/hour** Poisson arrival rate assumption.
+4.1.4. **Validation status: simulation-only.** No user study, no physiological data, no real SOC log.
+
+### 4.2 Microsoft Security Research — "Adaptive Incident Prioritization for Security Operations at Scale," CCS 2026 [verified in full, arxiv.org/html/2607.16963v1]
+
+4.2.1. Evaluated on **1,000 customer organizations'** expert-reviewed queues.
+4.2.2. **473,000** organization-day queue telemetry records.
+4.2.3. Public dataset extension: **9,980 incidents across 499 organization queues** (GUIDE dataset).
+4.2.4. Confirmed: prioritization model uses only incident content and global corpus statistics — **no queue depth, analyst availability, arrival rate, or handling time appears anywhere in the scoring model.**
+4.2.5. Its "adaptive" mechanism (bounded tenant-feedback multiplier) is explicitly **not enabled in production**; adaptation is daily retraining on a rolling 30-day corpus for alert-type drift, not live workload.
+
+### 4.3 Jalalvand, Baruwal Chhetri, Nepal, Paris (CSIRO Data61), 2025 [verified in full, arxiv.org/html/2506.18462]
+
+4.3.1. Analyst capacity modeled as a **fixed, static time budget**: ~80% of an hour reviewing alerts (**~48 min/hour**).
+4.3.2. Per-severity handling times: critical = **4.5 min**, high = **3.5 min** (and further severity tiers below that).
+4.3.3. Evaluated on synthetic benchmark datasets: **UNSW-NB15, CICIDS2017**, approximately **2 million alerts each**, simulated **400 alerts/hour** Poisson arrivals (same figure as RADAMS — likely a borrowed assumption, not independently measured), with simulated (not real) analyst decisions.
+
+### 4.4 Rosbach, Ganz, Ammeling, Riener, Aubreville — automation bias under time pressure, 2024 [verified in full, arxiv.org/abs/2411.00998]
+
+4.4.1. Real controlled study: **n=28** trained pathology experts, within-subjects time-pressure manipulation.
+4.4.2. Automation-bias error rate approximately **7%** under both time-pressure conditions — frequency of wrongly deferring to bad AI advice did **not** increase under pressure.
+4.4.3. Severity of errors **did** increase under time pressure — the one real-human-validated result in this whole research pass linking pressure to degraded human-AI teaming, though outside cybersecurity (computational pathology).
+
+### 4.5 Air traffic control workload research [citation-chain-confirmed via arxiv.org/html/2307.10559, foundational works not independently read]
+
+4.5.1. Dynamic Density model — Masalonis et al., 2003.
+4.5.2. NASA-TLX — Hart & Staveland, 1988.
+4.5.3. SWAT — Reid & Nygren, 1988.
+4.5.4. Ground truth in the citing paper: self-reported workload ratings collected **every 3 minutes**; the paper's own authors flag their collected ratings as poor quality and note a correction was required (citing Lieber, 2020).
+
+### 4.6 Call-center queueing (Koole) [partially verified, PDF extraction incomplete]
+
+4.6.1. Confirmed M/M/s (Erlang C) state variables: arrival rate λ, service rate μ, server count s, queue length, abandonment rate, waiting time.
+
+### 4.7 Tier-2 sources — snippet/abstract level only, flagged as unverified leads, not settled citations
+
+4.7.1. ACM Computing Surveys 2025, "Alert Fatigue in Security Operations Centres" — cites SIEM scale of **50-500 billion events/day**, **500-3,000 detection rules** per the search snippet only; full text not read.
+4.7.2. Shah, Ganesan, Jajodia, Cam, IEEE TIFS 2019, and Shah et al., IEEE TPDS 2020 — CSOC-level alert reallocation across sites; snippet-only, needs direct verification before citing.
+
+---
+
+## 5. Field maturity — verified history (this session)
+
+5.1. Erlang's original queueing-theory work dates to **1909-1917**, developed at the Copenhagen Telephone Exchange Company. — [INFORMS, History of O.R. Excellence](https://www.informs.org/Explore/History-of-O.R.-Excellence/O.R.-Methodologies/Queueing-Models)
+5.2. Adopted by Bell Telephone Company and the British Post Office in the 1920s.
+5.3. Became the standard tool specifically for call-center staffing in the **1980s-1990s**.
+5.4. **Correction to earlier framing:** Erlang C is a mathematical/queueing model, not a psychological one — the "field maturity" claim holds, but not because of human-factors research specifically, for this field.
+
+5.5. SOC conceptual origins trace to the **1960s-1970s**, military/government mainframe-era monitoring. — [SystemTek SOC history](https://www.systemtek.co.uk/2026/05/the-history-of-the-security-operations-center-soc-from-early-monitoring-rooms-to-ai-driven-cyber-defense/)
+5.6. Enterprise/bank adoption began **after 2000**.
+5.7. The field's own "golden age" — SIEM and modern SOC tooling standardizing — was **2007-2013**.
+5.8. **Conclusion:** SOC as a mature, standardized discipline is roughly 15-20 years old versus call-center staffing science's 40+ years of applied practice (and 100+ years of mathematical foundation).
+
+---
+
+## 6. Adversarial timing of attacks — verified statistics (this session)
+
+6.1. **78%** of companies cut SOC staffing by 50% or more during holidays and weekends.
+6.2. **6%** cut SOC staffing entirely during these periods.
+6.3. **44%** of respondents reduce security staff by as much as 70% on weekends/holidays.
+6.4. **21%** operate a skeleton crew, cutting staff by as much as 90%.
+6.5. **More than half** of all ransomware attacks in the past 12 months occurred during a holiday or weekend.
+6.6. **56%** of U.S. ransomware attacks and **47%** of healthcare-specific attacks occur during weekends/holidays; **73%** of healthcare organizations cut SOC staffing by half or more during these periods.
+6.7. Ransomware groups launch **52%** of their attacks during weekends specifically.
+6.8. **34%** of organizations hit during a weekend/holiday attack struggled to quickly assemble their incident response team.
+
+— [Cybersecurity Dive](https://www.cybersecuritydive.com/news/cyberattacks-weekends-holidays/636956/), [Semperis study](https://www.semperis.com/press-release/semperis-study-reveals-majority-ransomware-attacks-continue-during-holidays-weekends/)
+
+---
+
+*Compiled September 24, 2026. Every figure above is traceable to the source listed beside it — where verification was only partial (abstract/snippet-level), that's stated explicitly rather than presented as equal-confidence fact.*
