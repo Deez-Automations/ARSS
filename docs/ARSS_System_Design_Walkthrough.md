@@ -426,12 +426,17 @@ Final table, same four columns for all five, to stop the level-jumping:
 - [x] SIEM integration coverage — resolved with a concrete plan (two connector families, canonical internal format, per-vendor mapping); two genuine gaps flagged (CEF and QRadar both need custom/raw handling, no maintained library exists for either)
 - [x] Research grounding for SOC-behavior representation — resolved with cross-domain findings (call-center, ED, ATC, dispatcher literature) and seven concrete signal additions; honest caveat recorded that none of it is validated against real SOC human data yet
 
+### Resolved — SIEM target and naming
+
+*Team: "now the part that is left, find out which siem is mostly used, and practically which one is easier, im avoidnig any codebase work right now, for the actual name, the agents name is the ARSS which is official now"*
+
+- [x] **Naming — official**: no separate sub-name for the agent. It is ARSS, full stop.
+- [x] **SIEM target, resolved**: Splunk confirmed as the dominant global platform (**45.91%** market share, vs. **15.34%** Microsoft Sentinel, **9.22%** IBM QRadar; 11 consecutive years as a Gartner Magic Quadrant Leader). Pakistan-specific market-share data could not be confirmed — real regulatory pressure was found (a national SOC mandate, State Bank of Pakistan compliance requirements for banks) but no Pakistan-specific platform breakdown exists in accessible sources. **Decision: Splunk as the primary integration target**, justified on two independent grounds that happen to converge — it's both the most widely deployed globally *and* practically the easiest to build against (HEC needs no SDK, just a simple authenticated request, unlike Sentinel's OAuth2+RBAC setup or QRadar's complete lack of any library support, already established in the tech-stack research). Sentinel kept as the credible secondary given its official SDK coverage; QRadar deliberately deprioritized for integration work despite being common, given the lack of any library support.
+
 ### Still open
 
 - [ ] Whether "agent" applies in the strict technical sense — depends on which method wins the five-way comparison
-- [ ] Which SIEM is most commonly used by Pakistani organizations — flagged as needing real research or local/industry context, never resolved
 - [ ] The XGBoost-alone vs. ensemble ablation — recommended before the defense, not yet run
-- [ ] The agent's actual name — ATLAS / SENTRY / TRIAGE-X offered, never decided
 - [ ] Whether the final system is one flat winning method or a hybrid (offline RL for historical cold-start, bandit for live refinement) — deliberately left open, to be settled by the actual comparison results
 
 ---
