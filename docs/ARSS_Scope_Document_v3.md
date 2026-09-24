@@ -81,6 +81,8 @@ ARSS is composed of six functional components. An ingestion layer normalizes inc
 
 ## 2. Related System Analysis / Literature Review
 
+An earlier version of this document centered its literature review on a different lineage of RL-based alert-prioritization work: SAC-AP (Chavali et al., IEEE CEC 2022), TD3-AP (Chavali et al., Computers & Security 2024), KNAP (Chavali et al., AINA 2024), AlertPro (Wang et al., Computers & Security 2024), the A2C automation-mode framework (Chhetri et al., ACM TOIT 2024), and MITREtrieval (Huang et al., IEEE TNSM 2024). That review remains valid work and is not being discarded. It was reviewed and verified during this project's literature process, but it is no longer the central comparison, since these systems address continuous alert-priority ranking grounded in a MITRE ATT&CK reward, which was the project's earlier direction before a full technical reset. They remain genuinely adjacent literature, cited below for completeness rather than as the project's closest prior art, which Table 1 addresses directly with the papers most relevant to the current, workload-adaptive triage direction.
+
 **Table 1: Related System Analysis with Proposed Project Solution**
 
 | Application Name | Features | Weakness | Relevance with Proposed System |
@@ -93,6 +95,17 @@ ARSS is composed of six functional components. An ingestion layer normalizes inc
 | **Jalalvand et al.** (CSIRO), 2025 [6] | Deep reinforcement learning for learning-to-defer, trained with analyst feedback. | Analyst capacity modeled as a fixed time budget that does not change during a run. | Reinforces the precise novelty claim: ARSS conditions its decision on a live, changing capacity signal, which this closely related work does not. |
 | **Adaptive Incident Prioritization at Scale** (Microsoft Security Research, CCS 2026) [7] | Real production system, evaluated on 1,000 customer organizations and 473,000 organization-days of queue telemetry. | Confirmed, directly from the model description: prioritization never conditions on queue depth, analyst availability, or arrival rate, despite being described as adaptive. | Independent, large-scale, real-production confirmation that the workload-blindness gap ARSS addresses is not merely a research artifact. |
 | **Commercial platform survey (13+ platforms)** | Splunk, Microsoft Sentinel, IBM QRadar, Elastic, Google SecOps, and other major SOC platforms, checked directly against their own technical documentation. | Confirmed absent in every platform checked: none allow current team workload to change an alert's scoring or disposition. | Establishes that the gap ARSS addresses is real in current commercial practice, not only in the academic literature. |
+
+**Table 1b: Adjacent Literature Reviewed Under the Project's Earlier Direction**
+
+| Application Name | Features | Note |
+|---|---|---|
+| SAC-AP (Chavali et al., IEEE CEC 2022) [8] | Soft Actor-Critic RL for continuous alert-priority ranking. | Ranking output, not a discrete disposition decision; not workload-conditioned. |
+| TD3-AP (Chavali et al., Computers & Security 2024) [9] | Extends SAC-AP with TD3, validated on real IDS datasets. | Same ranking-output limitation as SAC-AP. |
+| KNAP (Chavali et al., AINA 2024) [10] | Attack-graph knowledge injection into deep RL for alert prioritization. | Custom heuristic knowledge source, not workload-conditioned. |
+| AlertPro (Wang et al., Computers & Security 2024) [11] | RL with analyst feedback for alert re-ranking, sub-500ms latency. | Ranking only, no autonomous disposition decision. |
+| A2C Framework (Chhetri et al., ACM TOIT 2024) [12] | Automate-Augment-Collaborate conceptual framework for SOC automation modes. | Conceptual, no learned policy implemented. |
+| MITREtrieval (Huang et al., IEEE TNSM 2024) [13] | BERT combined with MITRE ATT&CK for extracting attack techniques from threat reports. | Does not feed into a triage policy or reward function; no longer load-bearing since MITRE ATT&CK is not the project's reward mechanism. |
 
 ### 2.1 Vision Statement
 
@@ -119,10 +132,19 @@ The project will focus on prototype-level implementation, evaluated in simulatio
 
 ## 4. Project Stakeholders and Roles
 
-- **Students (Developers):** Responsible for system design, implementation, testing, and documentation.
-- **Supervisor:** Provides technical guidance, evaluates progress, and ensures academic quality.
-- **SOC Analysts (End Users):** The primary beneficiaries of workload-adaptive triage, and the source of the operational reality the system is designed around.
-- **Academic Institution:** Evaluates the project as part of degree requirements.
+**Table 2: Project Stakeholders for ARSS**
+
+| Stakeholder | Role |
+|---|---|
+| GIKI | Project sponsor |
+| Muhammad Daniyal (2023406) | System design, literature review, adaptive-policy development, documentation |
+| Haider Iqbal (2023416) | Detection ensemble training, SOC-state tracking implementation, testing |
+| Syed Daud (2023677) | Simulation environment, dataset preprocessing, dashboard development |
+| Dr Muhammad Fawad Khan | Technical guidance, research direction, academic oversight |
+| Miss Hadia Abbas | Technical guidance, security principles |
+| Senior Design Project Evaluation Panel | Project assessment and final evaluation |
+
+*Note: the per-person task descriptions above have been updated to match the current system's components (the earlier version listed "RL agent development" and "explainability layer" specifically, reflecting the pre-reset architecture). The general division of labor is carried over unchanged from the original document; the team should confirm these specific task reassignments rather than treat them as already decided.*
 
 ### 4.1 References
 
@@ -139,6 +161,18 @@ The project will focus on prototype-level implementation, evaluated in simulatio
 [6] F. Jalalvand, M. B. Chhetri, S. Nepal, and C. Paris, "Adaptive Alert Prioritisation in Security Operations Centres," arXiv:2506.18462, 2025 (published version: *Information Sciences*, 2026, DOI: 10.1016/j.ins.2026.124128).
 
 [7] Microsoft Security Research, "Adaptive Incident Prioritization for Security Operations at Scale," *ACM CCS*, 2026. arXiv: 2607.16963
+
+[8] L. Chavali, T. Gupta, and P. Saxena, "Soft Actor-Critic Based Deep Reinforcement Learning for Alert Prioritization," in *Proc. IEEE Congress on Evolutionary Computation (CEC)*, 2022. DOI: 10.1109/CEC55065.2022.9870423
+
+[9] L. Chavali, A. Krishnan, P. Saxena, B. Mitra, and A. S. Chivukula, "Off-Policy Actor-Critic Deep Reinforcement Learning for Alert Prioritization," *Computers & Security*, vol. 142, 2024. DOI: 10.1016/j.cose.2024.103893
+
+[10] L. Chavali, P. Saxena, and B. Mitra, "KNAP: Knowledge-Empowered Deep Reinforcement Learning for Alert Prioritization," in *Proc. Advanced Information Networking and Applications (AINA)*, Springer LNCS, 2024. DOI: 10.1007/978-3-031-57916-5_34
+
+[11] X. Wang, X. Yang, X. Liang, et al., "AlertPro: Context-Aware Reinforcement Learning for Alert Prioritization," *Computers & Security*, vol. 137, 2024. DOI: 10.1016/j.cose.2023.103583
+
+[12] M. B. Chhetri, S. Tariq, R. Singh, F. Jalalvand, C. Paris, and S. Nepal, "Human-AI Teaming for Alert Fatigue: An A2C Framework Approach," *ACM Transactions on Internet Technology*, vol. 24, no. 3, 2024. DOI: 10.1145/3670009
+
+[13] Y. T. Huang, R. Vaitheeshwari, M. C. Chen, Y. D. Lin, and R. H. Hwang, "MITREtrieval: Fusing BERT with MITRE ATT&CK Ontology for TTP Extraction from Threat Reports," *IEEE Transactions on Network and Service Management*, vol. 21, no. 4, 2024. DOI: 10.1109/TNSM.2024.3401200
 
 **Note on this reference list:** Every citation above traces to a source checked directly during this project's research process, either full text or a verified abstract, per the project's own citation log in `docs/ARSS_Facts_and_Figures.md`. Two items from the prior version of this document have been removed pending verification: the CrowdStrike Charlotte AI commercial reference and the Gartner 2026 cybersecurity trends citation. Neither was checked against a primary source during this project's research. The earlier document is on record as having contained at least one unverified statistic previously, so neither should be reinstated without that check. Reference [1]'s bibliographic data is confirmed, but the exact 51%/49% wording inside the paper is pending a direct re-check, since ACM's access restriction blocked full-text verification during this project's research. One unconfirmed lead suggests the two figures may originate from Trend Micro and IBM industry reports respectively, cited by Tariq et al. rather than originated by them.
 
