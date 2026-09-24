@@ -222,15 +222,217 @@ What does **not** get delivered, stated plainly: no enforcement actions — that
 
 ---
 
-## Running Checklist of Parked Design Work
+## Part 2: System Model — Research Agents and Design Coupling
 
-*Carried forward from this walkthrough, to be resolved together once the full section pass is complete — this is system-model work for the defense presentation, its own separate effort.*
+*What follows covers everything from the team launching dedicated research agents on the parked checklist items, through to the actual system model, the method choices, the tech stack, and the reward function. Same rule as Part 1: content preserved as it happened, not rewritten after the fact.*
 
-- [ ] Whether "Alert Understanding" should compute its own score from scratch or read/normalize metadata already attached by an upstream SIEM, depending on deployment context
-- [ ] Making the SOC-state measurement robust: multiple signals, periodic reconciliation against ground truth, bounds-checking for impossible states, and a clear distinction between the simulated environment (correct by construction) and a real deployment (must pull from the authoritative source, not a self-maintained counter)
-- [ ] Broad SIEM integration coverage — real-time ingestion across common formats (CEF, Syslog, Splunk HEC, Sentinel Log Analytics API, Elastic Common Schema) plus historical-data bootstrapping using creation/resolution timestamps to reconstruct past queue-depth patterns and avoid a cold start
-- [ ] Proper research grounding for how "SOC behavior" gets represented — this is human-behavior modeling, not just an engineering counter; RADAMS's operator-stress concept (Yerkes-Dodson law) is one existing starting point, more literature needed before finalizing
-- [ ] Deciding, once the above is settled, whether "agent" in the strict technical sense applies — depends on which method wins the five-way comparison
+### Three research agents launched on the parked checklist
+
+*Team: "good , now I need you to launch few agents to start working on our system design work , we identify what we want to achive , as in this chat discussde and our approaches alll research backed , got it ?"*
+
+Three of the five checklist items were genuinely separable research questions, launched in parallel:
+1. **SOC workload representation** — digging past RADAMS for how human operator workload/capacity is modeled across security and adjacent fields.
+2. **Robust live-state tracking** — real engineering patterns for keeping the SOC-state counter accurate against drift.
+3. **SIEM formats and historical bootstrapping** — real alert formats/APIs, whether upstream metadata already exists, whether the timestamp-reconstruction idea has precedent.
+
+*Team: "for contexxt , were currently exploring our options of desigining right , so after all these researches we will fine out what apporach coupliong can be used for system design"*
+
+Confirmed: exploration phase, not committing to a final design until all research is in and the pieces get coupled together deliberately.
+
+### Agent 2 report — robust SOC-state tracking, digested
+
+Core recommendation: stop treating the running counter as the source of truth at all. Split into three layers — a real source of truth, a fast incremental estimate, and a reconciler that periodically recomputes the truth and treats drift as a signal, not something to silently patch. In the simulator: hard-fail invariant checks, reconciliation every episode reset and periodically mid-episode, idempotent event handling. In a real deployment: the estimate updates live on webhook events (deduplicated by ID), reconciled against the real case-management system's own API every 60-120 seconds and after any restart, with persistent drift escalated rather than quietly corrected. Independent validation found for the team's own "it can't be one number" instinct: real Kafka-monitoring practice argues raw backlog count alone is a known-bad metric — time-based lag (age of oldest item) matters just as much, which is exactly what the draft design already had (oldest-alert age alongside queue depth).
+
+### Agent 3 report — SIEM formats, digested
+
+**Does an alert already carry metadata?** Yes, but only at the correlation/incident layer (Sentinel Incidents, Splunk Risk-Based Alerting, QRadar Offenses) — raw event formats (bare Syslog, unenriched CEF) carry almost nothing beyond a bare severity. Recommendation: build Alert Understanding as a normalization layer with a per-connector trust-upstream-vs-recompute switch.
+
+**Can historical timestamps reconstruct queue depth for bootstrapping?** Yes — a real, established queueing-theory technique, with a very close 2026 precedent (Etcibasi, Dobos & Koksal, arXiv:2604.10250) reconstructing organizational cyber-workload trajectories from bug-report/patch timestamps at 91-96% accuracy on real enterprise data. Their use is after-the-fact resource estimation; using the same technique for *pre-deployment policy calibration* appears to have no prior precedent — a legitimate, narrow novelty framing.
+
+**Retention correction:** the earlier "commonly 30-90 days" claim doesn't hold — verified per platform, it ranges from 30 days (QRadar events) to 90 days (Splunk Cloud, Sentinel free tier) to 6 years (Splunk Enterprise self-hosted) to indefinite (unmanaged Elasticsearch).
+
+**Integration friction:** Splunk HEC uses token auth with optional ack-channel complexity; Sentinel requires full OAuth2 + RBAC role grant; QRadar uses its own token system with no published rate limit; CEF/Syslog have no auth at the format level at all. One sharp trap: severity direction isn't consistent across platforms (some count up toward worse, some count down).
+
+### Agent 1 report — SOC workload representation, digested
+
+RADAMS re-examined more deeply: uses an arrival *rate* over a window (not a static count), folds in operator expertise, tracks staleness separately — but confirmed simulation-only, never validated against real humans. A 2026 Microsoft production system (CCS 2026, 1,000 real customer orgs, 473K org-days of data) calls itself "adaptive" and still never conditions on queue depth, analyst availability, or arrival rate anywhere in its model — strong independent corroboration of the core novelty claim. The closest SOC competitor (Jalalvand/CSIRO 2025) turned out to use a *fixed* capacity budget that never moves during a run — sharpening the gap rather than closing it. One real human-validated finding (Rosbach et al. 2024, n=28 real medical experts): time pressure doesn't make people defer to bad AI advice more often, but makes the resulting errors worse — a real justification for the severity floor staying workload-independent. Recommended additions to the SOC-state signal: arrival rate, severity-weighted burden, a capacity/utilization ratio, staleness as a distribution not just the oldest item, an analyst-expertise modifier, a trend term, and time-in-shift. Honest caveat found across every domain checked: nobody has validated that these workload proxies actually predict real human error rates in a SOC specifically — that's future work, not settled.
+
+### Follow-up — explanation clarity, redone
+
+*Team: "look youre again speaking unexplained language , please keep your previous level of explanation and tone so I can actually understand it"*
+
+The three agent digests above were redone in fully plain language — no unexplained jargon, concrete phrasing throughout (e.g., "a real company Microsoft actually uses for 1,000 real companies" instead of "conditioning on live state").
+
+### Follow-up — simulation limits and why companies haven't done this
+
+*Team: "yeah but even for our case we are only gonna simulate on generated data , and why havent compaines actually made it possible despite of being billion dollar companies"*
+
+Honest concession: this project has the exact same "simulation only, never tested on real people" limitation just criticized in RADAMS and the CSIRO paper — no exemption from that, and it needs saying plainly in the defense, not glossed over. On why companies haven't built this: the confirmed reason (from earlier research) is trust and liability, not lack of ideas — CISOs rank alert triage as the top thing they want automated, and it's simultaneously the least-deployed AI feature in the SOC. A further, honestly-labeled *reasoning* point (not verified fact): SOC alert traffic isn't neutral the way patients or phone calls are — some of it is generated by an adversary who may deliberately time attacks to exploit low-staffing windows.
+
+*Team asked this be made factual, not guessed — verified via direct research:*
+- **Field maturity, confirmed with real dates**: Erlang's queueing math dates to 1909-1917, adopted by Bell Telephone/British Post Office in the 1920s, standard for call-center staffing since the 1980s-1990s — over a century old at the root, ~40 years applied. SOC as a mature, standardized discipline dates only to roughly 2007-2013 (SIEM/DLP tooling standardizing) — 15-20 years old. One correction made: call-center maturity is mathematical (queueing theory), not psychological — only ATC specifically has real psychological measurement tools (NASA-TLX, 1988).
+- **Adversarial timing, confirmed with real statistics**: 78% of companies cut SOC staffing 50%+ on holidays/weekends, 6% cut entirely, 21% run a skeleton crew cut up to 90%. More than half of all ransomware attacks in the past year landed on a holiday or weekend specifically. (Full figures and sources in `ARSS_Facts_and_Figures.md`, section 6.)
+
+### The Facts and Figures reference document created
+
+*Team: "for context, from section1 till now every single thing you searched, factual, cite it, focus on numbers, values, factual only"*
+
+A new document, `docs/ARSS_Facts_and_Figures.md`, was created and has been maintained since as the numbered, sourced home for every verified statistic, formula, and citation surfaced across this whole design process — kept separate from this narrative walkthrough so the two serve different purposes (this document = the conversation and reasoning; that one = the numbers, quotable directly).
+
+### Adversarial robustness — the "attacker mind" idea, verified
+
+*Team, connecting the adversarial-timing stats to the severity floor and proposing training the policy against a simulated attacker, while flagging that a "council" of 2-3 agents might just add latency/overfitting without solving the real problem:*
+
+Research confirmed: this is a real, named technique. **SA-MDP/ATLA** (Zhang et al., NeurIPS 2020 / ICLR 2021) trains an adversary model online, alongside the main policy, specifically for the case where an attacker perturbs the agent's *observation* without changing the true state — exactly this project's threat model. **Double-oracle** (used directly in Tong et al. 2020, see below) is the game-theoretic alternative, better matched to a strategic, budget-aware attacker. RADAMS's exact hypothesized attack — flooding with fake alerts to manufacture a false impression of overload — already has a formal name: **"Informational Denial-of-Service (IDoS)"** attacks. The council/ensemble suspicion was confirmed correct: the researchers who originated "ensemble adversarial training" as a defense later found, in their own paper's abstract, that a sufficiently adaptive attacker defeats it; a separate RL finding showed policies trained via self-play (an implicit council) were still reliably beaten by one crafted attacker using under 3% of the training compute. Real, measured tradeoff confirmed from ATLA's own results tables: adversarially-trained policies showed a real natural-performance cost on non-attack days (partially recoverable with better architecture choices), but **no added inference-time latency** — the robustness is trained in, not computed live.
+
+### Precision deep-dive — Tong et al. 2020 and the RADAMS "20%" figure
+
+*Team: "verdict is , the 2 faced RL agent is very riskier before its even deployed? and manipulations works parallely and equally, and that 2020 paper... needs a complete go through as it seems to be closest to ours, and against IDOS, only 20% risk reduction, what this metric represents, how? does this sound? give an explanation on only WHY did the council performed bad on our conditions when its supposed to be good"*
+
+Answered directly: the adaptive/RL approach isn't uniquely risky by virtue of being RL — any system reacting to a live external signal it doesn't fully control has this exposure, true since the moment "react to live workload" was chosen as the core idea. Exposure is roughly equal across all five candidate methods (they all read the same signal); what's unequal is the *capacity to be hardened* — only the learned end (bandit, RL) can actually be trained to resist manipulation.
+
+**Why the council fails, mechanically**: ensembles help when different models make different, independent mistakes on otherwise-good data — averaging cancels random error. They don't help when the *input itself* is corrupted, because every model in the council receives the identical false number and reacts to it the same way. There's nothing to disagree about. The real fix for a corrupted input is catching it at the source (the reconciliation mechanism from Agent 2's report), not adding more decision-makers downstream of the lie.
+
+**Deep-dive results, from full end-to-end reads of both papers:**
+- **Tong et al. 2020 (AAAI, arXiv:1906.08805)** — confirmed the closest prior art found in this entire project. Their "budget" is a fixed constant, never observed by the policy as input (confirmed directly from their equations and network architecture — the policy only ever sees alert-type counts), and their alert queue resets every period with no accumulating backlog. **The honest verdict, quoting the agent directly: "if ARSS's pitch stops there, this paper is a direct, damaging prior-art hit."** The genuine, defensible difference rests on two specific things this paper doesn't have: capacity as a *live, observed state feature*, and a *persistent, accumulating backlog* — both of which ARSS's design already has, but which now must be preserved precisely in implementation, since a panel could name this exact paper.
+- **RADAMS's "20% risk reduction" — corrected, it was overstated.** "Risk" is a dollar-cost metric built from an author-chosen, uncited cost table. The 20% figure is the *best* of four tested categories under one benchmark setup (the other three only reached ~16%), and the paper's own sensitivity analysis shows this advantage can fall to *zero* under cheap, frequent feint attacks — the exact condition most relevant to this project's threat model. Correct citation form: "reduced an internally-defined cost metric by up to ~20% in the best case, with the improvement vanishing under some adversarial conditions," not a flat "20% risk reduction."
+
+(Full numbers, formulas, and citations for all of the above are in `ARSS_Facts_and_Figures.md`, sections 7 and the Tong/RADAMS corrections.)
+
+### The system model — synthesized
+
+*Team: "good work , so this was a complete haul for the system design , so now i think were cleared so now do we have any kind of system model? system design, consdiering this complete section discussion on system model"*
+
+Everything above was coupled into one architecture, six components: **(1) Ingestion** — two connector families (passive listeners for Syslog/CEF, authenticated pollers for HEC/Sentinel/QRadar-style APIs), each normalizing into one canonical format, with a trust-upstream-vs-recompute switch. **(2) Alert Understanding** — the existing detector, scoped to raw-source alerts. **(3) SOC-state tracking** — the enriched multi-signal state, built on the three-layer robust-tracking design. **(4) Severity floor** — checked first, external to the learned policy. **(5) Adaptive disposition policy** — the five-method comparison, hardened via adversarial co-training for the learned end. **(6) Feedback loop.**
+
+### The six components, in plain language
+
+*Team: "i need more clean explanation and lyman for each one cuz I confidently udnerstand it"*
+
+1. **The front door (ingestion)** — translates whatever format a SIEM sends into one shared internal format, and checks whether the alert already comes pre-scored.
+2. **Reading the alert (Alert Understanding)** — answers how dangerous, what kind, how confident — the already-built detector.
+3. **Knowing how busy the team is (SOC-state tracking)** — several signals together (arrival rate, severity-weighted burden, utilization, staleness distribution, analyst expertise, trend, time-in-shift), checked against reality on a schedule so drift gets caught, not trusted blindly.
+4. **The rule that never bends (severity floor)** — checked first; a genuinely dangerous alert always goes to a human, no exceptions, no matter how busy the team looks.
+5. **The actual decision-maker (adaptive disposition policy)** — combines the alert's own properties with the current workload, chooses among the five compared methods by evidence, and for the learned end, is trained against a simulated attacker trying to manipulate the workload signal.
+6. **Learning from what happened (feedback loop)** — outcomes get checked after the fact and feed back into the policy.
+
+### Follow-up — normalization timing clarified
+
+*Team: "when it check sthe format , it means it normalizes it ? or that normalization happens on next step ?"*
+
+Normalization *is* what "checking the format" means — it happens right at ingestion, not later, because different tools use different severity scales (some ascending, some descending) and different field names, and nothing downstream should have to know which of many tools an alert came from. Separately, and only after normalization, comes the different decision of whether a usable score already exists (correlation-layer sources) or still needs computing (raw sources, handed to Alert Understanding).
+
+### Choosing the actual models and techniques, with reasoning
+
+*Team: "now we need to chose models and techniques , knowing that we have done alot of substantial research , we can now decide what fits us and WHY , not that this research said this is good , bnut an actual reasoning that justifies the usecase of what we use and what NOT and WHY not"*
+
+First pass at this (criticized as "just defending" rather than teaching — see the more complete version below) covered: prioritizing the threshold, bandit, and offline RL methods for real engineering investment over supervised/learning-to-defer (which lack real labeled human-decision data and would mostly imitate a synthetic rule); choosing discrete-action offline RL algorithms (CQL/discrete BCQ) over Tong et al.'s DDPG, since DDPG fits continuous action spaces and this project's action space is discrete; choosing double-oracle over ATLA for adversarial training, since it matches the strategic, budget-aware IDoS threat model directly and is already validated on Tong et al.'s directly analogous problem; prioritizing the cheap, high-value state signals (arrival rate, severity-weighted burden, staleness distribution, trend) over the costlier ones (capacity ratio, analyst expertise, time-in-shift) for a first build; and explicitly rejecting ensembles as a primary defense and online RL as unsafe for this application.
+
+*Team: "none of the explanation is clearing me concepts, its just defending, first tell me why not any other ML , give em a strong claim of how exactly we will prepare our dataset , which siem attributes will you idealize for trainign , i think we should go with the one which is mostly used by many pakistani orgs , than normalized at 1st step , 2nd step will make the statespace representation... if any attribute is missing , it will calcuate itself , but how? any math formula? ...than after that that is than passed for alert understanding process... but what that understanding even teaches when the real understanding of soc behaviour is on next layer?... after that it sverity layer sees if the trigger svere than I think the sverity layer should come before the soc understadnign... okay so after that if not triggered it takes defer and queue opptons, if triggered, than straight to priority panel... now explain me how RL helps here, bandit, offline RL learning, conservtive? what is conservative Q learning and descrete batch constrained q learning"*
+
+The full, properly-taught version:
+
+**Why RL/bandit over other ML categories at all**: most ML answers a question about one input in isolation (is this spam, what's tomorrow's weather). This problem has a chain — today's decision changes tomorrow's queue. RL/bandit methods exist specifically for that chain; ordinary classification/regression has no concept of it. A hand-derived formula was also rejected, since it would require already knowing the correct workload-to-decision relationship in advance — which is exactly the unknown this project tests.
+
+**Dataset preparation, concretely**: CIC-IIoT2025 traffic → detector produces an alert stream (danger, category, confidence, ground truth) → fed into a discrete-event simulator (configurable analysts, handling-time distributions, live queue tracking) → produces a full historical record (arrival, decision, resolution, queue state at every moment) — this record *is* the training data, generated rather than found, run across multiple research-grounded SOC profiles rather than one scenario.
+
+**Which SIEM to target, Pakistani orgs specifically**: flagged as genuinely unverified — not something to guess, and possibly better known through local/industry contacts than open research. Held open, not resolved.
+
+**Pipeline reordering, validated as correct**: severity check should happen immediately after Alert Understanding, using only the alert's own score — before ever coupling in SOC-state, since a severe alert needs no workload context at all to make its call. SOC-state coupling only happens for alerts that don't trigger the floor, feeding the actual adaptive-policy decision.
+
+**Why Alert Understanding matters even though the "real" understanding comes later**: like a doctor assessing a patient's actual symptoms before knowing how busy the ER is — that assessment is a fact about the patient, independent of context, and it's one of two things that later get combined (the other being current capacity). Neither piece alone is "the real decision" — the decision only exists once both are combined, but you can't combine something that was never computed on its own first.
+
+**The missing-attribute formulas, with provenance stated honestly:**
+- Arrival rate: λ = (alerts in a recent window) ÷ (window length) — standard queueing-theory rate estimate, same as RADAMS's own signal.
+- Queue depth from timestamps: count every alert where creation ≤ t < resolution — the queue-reconstruction technique confirmed in the literature.
+- Utilization ratio: ρ = λ ÷ (analysts × per-analyst rate) — the classic Erlang traffic-intensity formula.
+- Severity-weighted burden: sum of danger scores of everything currently open — a direct combination of two already-established pieces, not itself a cited formula.
+- Staleness distribution: mean or 90th-percentile of (now − creation time) across the open queue — standard statistics.
+
+**RL, bandit, offline RL, and conservative methods, taught plainly**: RL learns which action leads to good long-term outcomes by watching consequences unfold, not judging one input alone. A bandit is a simpler version — like a slot machine, learn from each pull's payout, but pulling one arm doesn't change what the others pay next time; cheaper because it doesn't reason about long chains. Offline RL learns everything from one big pre-collected logbook instead of live trial and error — necessary here because an untrained system cannot safely experiment on real alerts. "Conservative" means the algorithm is built to distrust actions the historical data doesn't clearly support, instead of optimistically guessing about them — like assuming an unreviewed restaurant is great just because there's no bad review. **CQL** does this by actively pushing down the estimated value of poorly-supported actions. **Discrete BCQ** does it differently — it simply won't let the policy choose an action that wasn't reasonably common in the historical data in the first place.
+
+### Follow-up — tech stack verification
+
+*Team: "no its fine , can you now verify our teckstack ??"*
+
+Verified against real docs, GitHub activity, and proceedings, not assumptions:
+- **Offline RL: d3rlpy** — confirmed its DiscreteCQL/DiscreteBCQ genuinely match the papers' math; Ray RLlib ruled out (no discrete CQL, no BCQ at all), Stable-Baselines3 ruled out (not an offline-RL library), CORL ruled out (continuous-focused).
+- **Contextual bandit: `contextualbandits`** (david-cortes), `mabwiser` as backup. Correction made: `banditpylib` has no Microsoft affiliation — an attribution error introduced in this session's own research prompt, caught by the agent.
+- **Simulation: Gymnasium**, confirmed still the maintained standard.
+- **Detector: XGBoost + PyTorch** (not TensorFlow) — both the general 2025-2026 trend and, more concretely, stack coherence with the PyTorch-based RL libraries.
+- **SIEM parsing**: Sentinel best-covered (official Microsoft SDKs). Splunk HEC needs no SDK by design (plain HTTPS POST). Two genuine gaps found: **CEF** (no maintained library since 2018, needs adapting/writing one) and **QRadar** (no viable library at all, official or community — needs raw HTTP against the documented REST API).
+- **Citation correction**: discrete BCQ is a separate paper from continuous BCQ, with a different author list (Fujimoto, Conti, Ghavamzadeh, Pineau, NeurIPS 2019 *workshop*, not the main track) — only Fujimoto carries over from the original (Fujimoto, Meger, Precup, ICML 2019).
+
+### Rough-notes follow-up — MITRE scoring, floor-training-data, naming, reward formalization
+
+*Team, via pasted rough notes: "we can call the 2 stage detector as supervised classifier, alsot he attack scoring would come from mitre? ...the agent might need to know what severe looks like... or should we keep trigger alerts completely aside from agent learning so it doesnt overfit... what would be our agent called... what is the agent chasing, any variable? how does an agent measure that the result of his action was good?... the database explanation is good and needed"* — plus a direct instruction to re-verify the detector stack.
+
+- **"Supervised classifier" is accurate but now ambiguous** — there are two of them (the detection classifier and a possible triage-decision classifier); need distinct names going forward.
+- **MITRE for scoring is fine** — only removed as the *reward*, not banned as context.
+- **Severity-floor training data resolved**: the agent should never be trained to choose actions on floor-triggered alerts (it never has a real decision there, risking spurious learned patterns) — but the *fact* that severe alerts are active should still inform the SOC-state signal as context.
+- **Agent naming**: offered as options, not decided — ATLAS (Adaptive Triage & Load-Aware Scheduler), SENTRY, TRIAGE-X.
+- **Reward, formalized**: a small fixed cost for every escalation (real analyst time, regardless of outcome); a small positive reward for correctly auto-closing/deferring a genuinely low-risk alert; a large negative reward, scaled by severity, for auto-closing/deferring something that was actually a real attack (ground-truth-backed, since CIC-IIoT2025 has labels). The variable being optimized: expected cumulative cost — mirroring RADAMS's cost-based structure in shape, though with this project's own justified values, not borrowed numbers. The "database" is the outcome log itself: alert → decision → ground truth → cost, one row per alert.
+
+### Follow-up — detector re-verification against 2025-2026 approaches
+
+Verdict: **XGBoost + DNN remains defensible; nothing meaningfully better found.** Checked against CICIoT2023, NSL-KDD, CICIDS-2017/2018, UNSW-NB15 — gradient-boosted trees matched or beat deep tabular models and tabular foundation models on every comparable result. One real, actionable finding: a directly comparable hybrid study found standalone XGBoost matched or slightly beat their DNN-ensemble version — **recommended before the defense: run the XGBoost-alone vs. ensemble ablation on the project's own existing results**, since the gain isn't automatic. Also flagged: cannot claim validation against published CIC-IIoT2025 results specifically (too new, no comparative literature yet), and a feature-count discrepancy (71 vs. a third-party's 22) worth double-checking.
+
+### Follow-up — why XGBoost wins, and untangling bandit vs. d3rlpy
+
+*Team: "what made xgboost perform well and not that , and your explanation on choosing D3RLPY is a DCQL with contextual bandit and , bte is bandit a mechanism we use or library we use? cuz d3rlpy is a model? and bandits gets linked with RL for dealing with Discrete conservtive q learning"*
+
+**Why XGBoost wins**: network-traffic data has no "neighborhood" structure the way images/text do (shuffling columns changes nothing), which is exactly what deep learning is built to exploit — so that strength has nothing to grab onto here. Trees don't care about a value's scale (just "above or below a threshold"), which suits messy, mixed, skewed security data natively. Trees also need less data to find good splits than deep nets need to find good patterns.
+
+**Bandit vs. d3rlpy, corrected**: these are two of five *independent, separately-run* candidates, not linked components of one system. "Bandit" is a mechanism/category, built with the `contextualbandits` library. "Offline RL" is a different mechanism/category, built with `d3rlpy`. d3rlpy is a toolbox, not an algorithm — Discrete CQL and discrete BCQ are two specific algorithms *inside* it, both being tried for the offline-RL slot specifically, with no connection to bandit at all.
+
+### Follow-up — how the five candidates actually produce a result
+
+*Team: "so how they all work together for resulkt"*
+
+They never run together. All five get tested against identical conditions (same simulated alert stream, same SOC profiles), each running its own separate, non-interacting pass, scored with the identical cost structure. After all five finish, their results get lined up side by side — that comparison table is the actual output. Whichever wins on both workload-reduction and missed-severe-alert-rate together becomes the real decision-maker; the rest stay in the writeup as the baselines proving why.
+
+### Follow-up — the hybrid possibility and what each candidate actually contributes
+
+*Team: "so 5 are the candidates out of which 1 will be selected? but wasnt offline RL policy needed so it can learn based on historical data as a cold start, and bandit for each step decision learning... but im just asking each of 5 have their contirbution no? i jsut cant understand how the 5 jsut happens to be there how to map em up"*
+
+Correction to the earlier "flat comparison, pick one winner" framing: offline RL naturally fits learning from history before deployment; the bandit naturally fits continuing to learn live after deployment — these aren't just two rivals doing the same job, they suit two different phases of one possible lifecycle. The honest fuller picture: either one flat method wins outright, **or** the actual best system turns out to be a combination (offline RL for the historical head start, bandit for ongoing live refinement) — and which of those is true is itself part of what the comparison tests, not assumed either way.
+
+**What each of the five actually isolates as a question**: threshold — is any learning needed at all? Supervised — is imitating a rule enough without learning from outcomes? Learning-to-defer — does knowing when it's unsure add value? Bandit — is per-decision outcome learning enough, kept live? Offline RL — does reasoning about long chains of consequence add value beyond the bandit's simpler view?
+
+### Follow-up — the final map, corrected
+
+*Team: "so youre saying bandit helps in taking decision at instance and offline policy helps in updating the policy after a run? and d3rply is the algorithm of descrete learning of RL, and learning algorithm is DCQL? can you make a map between all of 5 candiidates how they cordinae, th 5 explanation you gave got very confusing ebcaus eof prepectives"*
+
+Two corrections: the bandit decides *and* updates together, continuously, every single step. Offline RL studies the entire completed historical record once, upfront, before ever making a live decision, then uses that fixed policy — it doesn't update "after a run" in the bandit's live sense. And again: d3rlpy is the toolbox, not an algorithm; DCQL is one candidate technique inside it, discrete BCQ is the other.
+
+Final table, same four columns for all five, to stop the level-jumping:
+
+| # | Approach | When it learns | Built with | Specific technique |
+|---|---|---|---|---|
+| 1 | Static threshold | Never — fixed rule | None needed | N/A |
+| 2 | Supervised classifier | Once, upfront | Standard ML library | Trained classifier |
+| 3 | Learning-to-defer | Once, upfront, plus confidence check | Same family as #2 | Defer-aware classifier |
+| 4 | Contextual bandit | Continuously, live, every decision | `contextualbandits` | LinUCB / Thompson Sampling |
+| 5 | Offline RL | Once, upfront, from the full historical batch | `d3rlpy` | Discrete CQL or discrete BCQ |
+
+---
+
+## Running Checklist of Parked Design Work — updated
+
+### Resolved during the system-model pass (Part 2)
+
+- [x] Alert Understanding's score-vs-normalize question — resolved with a trust-upstream-vs-recompute switch per connector, depending on whether the source is a correlation-layer or raw-layer platform
+- [x] SOC-state measurement robustness — resolved with the three-layer design (source of truth / incremental tracker / reconciler), sim vs. real-deployment cadences specified
+- [x] SIEM integration coverage — resolved with a concrete plan (two connector families, canonical internal format, per-vendor mapping); two genuine gaps flagged (CEF and QRadar both need custom/raw handling, no maintained library exists for either)
+- [x] Research grounding for SOC-behavior representation — resolved with cross-domain findings (call-center, ED, ATC, dispatcher literature) and seven concrete signal additions; honest caveat recorded that none of it is validated against real SOC human data yet
+
+### Still open
+
+- [ ] Whether "agent" applies in the strict technical sense — depends on which method wins the five-way comparison
+- [ ] Which SIEM is most commonly used by Pakistani organizations — flagged as needing real research or local/industry context, never resolved
+- [ ] The XGBoost-alone vs. ensemble ablation — recommended before the defense, not yet run
+- [ ] The agent's actual name — ATLAS / SENTRY / TRIAGE-X offered, never decided
+- [ ] Whether the final system is one flat winning method or a hybrid (offline RL for historical cold-start, bandit for live refinement) — deliberately left open, to be settled by the actual comparison results
 
 ---
 
