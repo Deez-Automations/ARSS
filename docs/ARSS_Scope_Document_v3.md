@@ -70,12 +70,12 @@ ARSS is composed of six functional components. An ingestion layer normalizes inc
 
 #### 1.2.1 Objectives
 
-- To reuse and validate the project's existing two-stage detection ensemble (XGBoost + DNN) as the alert-scoring component, benchmarked against comparable published results on related network/IoT intrusion-detection datasets.
+- To reuse and validate the project's existing two-stage detection ensemble (XGBoost + DNN) as the alert-scoring component, benchmarked against comparable published results on related network/IoT intrusion-detection datasets [14].
 - To design a SOC-state representation combining alert arrival rate, queue depth, severity-weighted burden, and alert staleness, and to build a discrete-event simulation environment capable of generating realistic training and evaluation data, since no existing public dataset records live SOC workload.
 - To implement a severity floor as a hard, non-learned constraint that guarantees escalation of high-severity alerts independent of the adaptive policy's output.
-- To implement and empirically compare five triage-decision methods, a static threshold, a supervised classifier, a learning-to-defer model, a contextual bandit, and offline reinforcement learning, under identical simulated conditions, so that the method used in the final system is selected by evidence rather than assumed in advance.
+- To implement and empirically compare five triage-decision methods, a static threshold, a supervised classifier, a learning-to-defer model, a contextual bandit, and offline reinforcement learning, under identical simulated conditions, using Conservative Q-Learning and discrete Batch-Constrained Q-Learning as the candidate offline-RL algorithms [15, 16], so that the method used in the final system is selected by evidence rather than assumed in advance.
 - To test the falsifiable hypothesis that workload-adaptive triage reduces analyst review burden during periods of high alert load without a statistically significant increase in missed high-severity alerts, relative to workload-blind baselines.
-- To evaluate the adaptive policy's resilience against deliberate manipulation of the workload signal, consistent with documented "Informational Denial-of-Service" attack patterns in the literature.
+- To evaluate the adaptive policy's resilience against deliberate manipulation of the workload signal, consistent with documented "Informational Denial-of-Service" attack patterns in the literature [4], hardened through adversarial training in the state-adversarial MDP framework [17, 18].
 
 ---
 
@@ -173,6 +173,16 @@ The project will focus on prototype-level implementation, evaluated in simulatio
 [12] M. B. Chhetri, S. Tariq, R. Singh, F. Jalalvand, C. Paris, and S. Nepal, "Human-AI Teaming for Alert Fatigue: An A2C Framework Approach," *ACM Transactions on Internet Technology*, vol. 24, no. 3, 2024. DOI: 10.1145/3670009
 
 [13] Y. T. Huang, R. Vaitheeshwari, M. C. Chen, Y. D. Lin, and R. H. Hwang, "MITREtrieval: Fusing BERT with MITRE ATT&CK Ontology for TTP Extraction from Threat Reports," *IEEE Transactions on Network and Service Management*, vol. 21, no. 4, 2024. DOI: 10.1109/TNSM.2024.3401200
+
+[14] M. A. Bouke et al., "Multi-Level Distributional Entropy for Explainable Network Intrusion Detection," 2026. arXiv: 2606.29797
+
+[15] A. Kumar, A. Zhou, G. Tucker, and S. Levine, "Conservative Q-Learning for Offline Reinforcement Learning," *NeurIPS*, 2020. arXiv: 2006.04779
+
+[16] S. Fujimoto, E. Conti, M. Ghavamzadeh, and J. Pineau, "Benchmarking Batch Deep Reinforcement Learning Algorithms," *NeurIPS Deep RL Workshop*, 2019. arXiv: 1910.01708
+
+[17] H. Zhang, H. Chen, C. Xiao, B. Li, D. Boning, and C.-J. Hsieh, "Robust Deep Reinforcement Learning against Adversarial Perturbations on State Observations," *NeurIPS*, 2020.
+
+[18] H. Zhang, H. Chen, D. Boning, and C.-J. Hsieh, "Robust Reinforcement Learning on State Observations with Learned Optimal Adversary," *ICLR*, 2021. arXiv: 2101.08452
 
 **Note on this reference list:** Every citation above traces to a source checked directly during this project's research process, either full text or a verified abstract, per the project's own citation log in `docs/ARSS_Facts_and_Figures.md`. Two items from the prior version of this document have been removed pending verification: the CrowdStrike Charlotte AI commercial reference and the Gartner 2026 cybersecurity trends citation. Neither was checked against a primary source during this project's research. The earlier document is on record as having contained at least one unverified statistic previously, so neither should be reinstated without that check. Reference [1]'s bibliographic data is confirmed, but the exact 51%/49% wording inside the paper is pending a direct re-check, since ACM's access restriction blocked full-text verification during this project's research. One unconfirmed lead suggests the two figures may originate from Trend Micro and IBM industry reports respectively, cited by Tariq et al. rather than originated by them.
 
