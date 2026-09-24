@@ -182,4 +182,43 @@
 
 ---
 
+## 8. Implementation tech stack (verified against docs/GitHub/proceedings, not marketing claims)
+
+### 8.1 Confirmed choices
+
+8.1.1. **Offline RL: d3rlpy.** `DiscreteCQL` and `DiscreteBCQ` confirmed at the doc/code level to implement the actual papers' math (log-sum-exp conservative penalty for CQL; imitation-network threshold formulation for discrete BCQ), not adapted continuous-action code. Latest release **v2.8.1 (2026-03-02)**, commits as recent as **2025-09-10**, Gymnasium-native.
+8.1.2. **Ruled out, with evidence**: Ray RLlib — confirmed via current official docs that its CQL is continuous-actions-only and it does not implement BCQ at all. Stable-Baselines3 — confirmed not an offline-RL library. CORL — confirmed continuous-focused; maintainers direct discrete-action users elsewhere.
+8.1.3. **Contextual bandit: `contextualbandits`** (david-cortes), most recent maintenance activity of the options checked (commits through 2026-06-28); **`mabwiser`** (Fidelity) as a close second.
+8.1.4. **Correction**: `banditpylib` has **no Microsoft affiliation** — an attribution error introduced in this session's own research prompt, corrected by the agent against the actual repository.
+8.1.5. **Simulation environment: Gymnasium**, confirmed still the maintained standard (releases through v1.3.0, 2026-04-22), both offline-RL library candidates build on it directly.
+8.1.6. **Detector: XGBoost + PyTorch DNN** (not TensorFlow) — PyTorch chosen both as the more common choice for new 2025-2026 work and, more concretely, because both RL libraries above are PyTorch-based, avoiding two mismatched deep-learning runtimes in one stack.
+
+### 8.2 SIEM/alert-format parsing — two genuine gaps, not solved by picking a library
+
+8.2.1. **CEF: no actively maintained parsing library exists.** The only real option (`pycef`) has had no commits since **2018**. Recommended approach: adapt its parsing logic directly or write an equivalent small parser — CEF's pipe-delimited format makes this realistic.
+8.2.2. **Syslog (RFC 5424)**: `syslog-rfc5424-parser` (EasyPost-maintained fork) — real, functional, grammar-based parser.
+8.2.3. **Splunk HEC: not actually a gap.** No SDK needed by design — confirmed via Splunk's own docs that HEC is a simple authenticated HTTPS POST; Python's `requests` library is the standard, documented approach.
+8.2.4. **Microsoft Sentinel: best-covered format** — official Microsoft SDKs confirmed (`azure-monitor-query`, `azure-mgmt-securityinsight`), both part of the official Azure SDK monorepo.
+8.2.5. **IBM QRadar: no viable library, official or community.** IBM's own `qpylib` only works for code running inside QRadar's own app framework, not as an external client. The one community client found (`qradar4py`) has been abandoned since **July 2020**. Recommended approach: direct HTTP calls against QRadar's documented REST API.
+
+### 8.3 CQL / discrete BCQ citations, precisely verified
+
+8.3.1. **CQL**: Kumar, Zhou, Tucker, Levine, "Conservative Q-Learning for Offline Reinforcement Learning," **NeurIPS 2020** (arXiv:2006.04779). Confirmed via official NeurIPS proceedings — exactly as expected.
+8.3.2. **BCQ (original, continuous)**: Fujimoto, Meger, Precup, "Off-Policy Deep Reinforcement Learning without Exploration," **ICML 2019** (arXiv:1812.02900).
+8.3.3. **Discrete BCQ — correction: a separate paper, different author list.** "Benchmarking Batch Deep Reinforcement Learning Algorithms," Fujimoto, Conti, Ghavamzadeh, Pineau, arXiv:1910.01708, **NeurIPS 2019 Deep RL Workshop** (not the main conference track). Only Fujimoto carries over from the original BCQ author list. This citation must not be conflated with the continuous BCQ paper's authors.
+
+## 9. Detector re-verification against current benchmarks (2025-2026)
+
+9.1. **Verdict: XGBoost + DNN remains defensible; no evidence found that a different model family currently beats it for this task.** Checked against CICIoT2023, NSL-KDD, CICIDS-2017/2018, and UNSW-NB15 — gradient-boosted trees (XGBoost/LightGBM) consistently matched or beat deep tabular models (TabNet, FT-Transformer) and the newest tabular foundation models (TabPFN) on every comparable result found.
+
+9.2. Representative verified numbers (Bouke et al., arXiv:2606.29797, Table 6, full text read): NSL-KDD — XGBoost F1=**0.9878** vs. FT-Transformer F1=**0.9818**, TabNet F1=**0.9705**. CICIDS-2017 — LightGBM F1=**0.9989**, XGBoost F1=**0.9987** vs. TabNet F1=**0.9687**. UNSW-NB15 — XGBoost F1=**0.9935** vs. best DNN (FT-Transformer) F1=**0.9881**.
+
+9.3. **Cannot claim validation against published CIC-IIoT2025 results specifically** — the dataset is too new; essentially no independent comparative literature exists on it yet. The defensible claim is validation against the closest well-studied comparable benchmarks (9.2), not this exact dataset.
+
+9.4. **A real, actionable precedent found, not just reassurance**: a directly comparable hybrid study (FFNN+XGBoost on CIC-IoT2023) found standalone XGBoost (**99.66%** binary / **99.31%** multiclass) matched or slightly beat their hybrid ensemble — the DNN addition did not clearly help in that case. **Recommended before the defense**: run an ablation — XGBoost alone vs. DNN alone vs. the actual soft-voting ensemble — on the project's own existing results, to confirm the ensemble earns its added complexity rather than assuming it does.
+
+9.5. **Flagged discrepancy, needs checking**: a third-party summary described a preprocessed CIC-IIoT2025 variant with 685,671 flow samples but **22 features**, not 71. If "71 features" traces to an external source rather than the project's own engineered feature set, this needs verifying before further citation.
+
+---
+
 *Compiled September 24, 2026. Every figure above is traceable to the source listed beside it — where verification was only partial (abstract/snippet-level), that's stated explicitly rather than presented as equal-confidence fact.*
