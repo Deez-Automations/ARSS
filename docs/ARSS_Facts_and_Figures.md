@@ -141,4 +141,38 @@
 
 ---
 
+## 7. Adversarial robustness of the learned policy (research agent, "attacker mind" training)
+
+### 7.1 The attack this addresses, formally named
+
+7.1.1. **"Informational Denial-of-Service (IDoS)" attacks** — an attacker deliberately generates a large volume of low-cost "feint" alerts to deplete a SOC's finite attention/workload capacity and hide real attacks among the noise. Formally defined and modeled in: Huang & Zhu, *Computers & Security*, 2022 (RADAMS / arXiv:2111.03463). [Verified: full 15-page text read.] Reported risk reduction from their defense: up to **20%**, shown resilient across a swept range of attack frequency, cost, and human attention capacity.
+
+### 7.2 Real, named techniques for training a policy against this
+
+7.2.1. **SA-MDP (State-Adversarial MDP)** — Zhang, Chen, Xiao, Liu, Li, Boning, Hsieh, NeurIPS 2020 (Spotlight). Formalizes an attacker perturbing the agent's *observation* of the state, not the true state itself — the correct framing for "attacker fools the system about workload without changing real danger levels." [Verified at abstract level.]
+
+7.2.2. **ATLA (Alternating Training with Learned Adversaries)** — Zhang, Chen, Boning, Hsieh, ICLR 2021 (arXiv:2101.08452). Trains an adversary model online, in alternation with the main policy, throughout training — not tested for weakness only after training is done. [Verified: full text read.]
+
+7.2.3. **Double-oracle** — the game-theoretic approach used directly on alert triage (see 7.3.1): both sides iteratively compute their best response to the other's current strategy, converging toward equilibrium.
+
+7.2.4. Explicitly tested and found weaker in the ATLA paper's own comparison: simply adding adversarial noise to the training buffer (Kos & Song 2017; Behzadan & Munir 2017 style) — described as "not sufficient to lead to a robust policy under stronger attacks."
+
+### 7.3 Prior art directly in this domain — needs adding to the project's related-work list
+
+7.3.1. Tong, Laszka, Yan, Zhang, Vorobeychik, **"Finding Needles in a Moving Haystack: Prioritizing Alerts with Adversarial Reinforcement Learning,"** AAAI 2020 (arXiv:1906.08805). [Verified: full text read via ar5iv.] An RL agent choosing which alerts to investigate under a hard budget/capacity constraint, trained against a strategic attacker via the double-oracle method. Results: beat a uniform baseline by **~50%** on network intrusion detection; beat prior game-theoretic baselines (GAIN, RIO) by **≥25%** on fraud detection; robust to attacker-budget misestimation (**±50%** error → only **5%** performance degradation); converged in **<15 iterations** empirically, though no formal convergence guarantee over infinite policy spaces.
+**Open question, not yet resolved:** whether this paper's "budget constraint" is a live, changing signal (like this project's queue-depth) or a fixed parameter per experiment (like the CSIRO 2025 paper's static capacity assumption, already noted in section 4.3). This directly bears on the project's core novelty claim and needs a direct check before being written into the paper either way.
+
+### 7.4 Ensemble/"council" defenses — checked and found insufficient as a primary defense
+
+7.4.1. Tramèr, Kurakin, Papernot, Goodfellow, Boneh, McDaniel, "Ensemble Adversarial Training: Attacks and Defenses," ICLR 2018 (arXiv:1705.07204) — the paper that originated "ensemble adversarial training" as a concept. Its own abstract, amended by the authors in **April 2020**, states subsequent work found more elaborate black-box attacks "could significantly enhance transferability and reduce the accuracy of our models." [Verified: abstract read in full, including the amendment.]
+7.4.2. Gleave et al., "Adversarial Policies," ICLR 2020 (arXiv:1905.10615) — policies trained via self-play (a form of implicit ensemble/diverse-opponent training) were still reliably beaten by a single crafted adversarial policy, using **less than 3%** as much training compute as the victim used. [Verified at abstract level.]
+
+### 7.5 Real, measured tradeoffs of adversarial training (from ATLA's own results tables)
+
+7.5.1. Natural (non-attack) performance cost, confirmed with real numbers from the paper: Hopper environment, vanilla PPO natural reward **3167** vs. adversarially-trained ATLA-PPO(MLP) **2559**; Ant environment, vanilla **5687** vs. ATLA-PPO(MLP) **4894**.
+7.5.2. This cost is partially recoverable with better architecture choices — their LSTM+regularization variant on HalfCheetah: **7117** (vanilla) vs. **6157** (robust variant) natural reward — a much smaller gap — while robustness under attack improved from **-660** to **+4806**.
+7.5.3. **No added inference-time latency** — the robustness is trained in, not computed at runtime; the deployed policy is the same size/architecture as a non-adversarially-trained one.
+
+---
+
 *Compiled September 24, 2026. Every figure above is traceable to the source listed beside it — where verification was only partial (abstract/snippet-level), that's stated explicitly rather than presented as equal-confidence fact.*
