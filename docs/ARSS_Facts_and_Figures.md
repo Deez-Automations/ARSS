@@ -219,6 +219,16 @@
 
 9.5. **Flagged discrepancy, needs checking**: a third-party summary described a preprocessed CIC-IIoT2025 variant with 685,671 flow samples but **22 features**, not 71. If "71 features" traces to an external source rather than the project's own engineered feature set, this needs verifying before further citation.
 
+## 10. CrowdStrike Charlotte AI — current (2026) capabilities, verified against primary source
+
+10.1. **Correction to a stale, pre-reset characterization.** An earlier version of this project's scope document described Charlotte AI as "imitation learning on analyst decisions" with an "LLM explanation layer." That description is outdated. As of 2026, Charlotte AI is a substantially larger agentic platform: **Charlotte AI AgentWorks** (no-code custom agent building), **Charlotte Agentic SOAR** (unified automation workspace), and seven specialized agents announced May 2026. [Verified via CrowdStrike's own current platform pages.]
+
+10.2. **No workload or capacity conditioning found**, checked directly against CrowdStrike's own Agentic SOAR documentation — nothing in how alerts are scored, classified, or triaged references team workload, queue depth, or analyst availability. Same gap already confirmed across every other commercial platform in this project's research.
+
+10.3. **"Fully autonomous execution" is a static, preset configuration, not a live decision.** Exact quoted language: *"Set the autonomy level for every workflow, from human-in-the-loop approval to fully autonomous execution."* A human sets this per workflow in advance; the system does not itself dynamically decide when autonomous action is warranted based on current conditions.
+
+10.4. **The underlying mechanism is explicitly hybrid**, per CrowdStrike's own description: *"Charlotte Agentic SOAR unites three automation technologies in one workspace: AgentWorks for custom agents, SOAR orchestration for deterministic workflows, and CrowdStrike Falcon Foundry for custom applications."* "Deterministic workflows" confirms a rule-based core beneath the agentic/AI branding, consistent with the pattern found across every other platform checked in this project (fixed logic plus an AI layer, not a fundamentally different adaptive architecture).
+
 ---
 
-*Compiled September 24, 2026. Every figure above is traceable to the source listed beside it — where verification was only partial (abstract/snippet-level), that's stated explicitly rather than presented as equal-confidence fact.*
+*Compiled September 24, 2026, updated September 25, 2026. Every figure above is traceable to the source listed beside it — where verification was only partial (abstract/snippet-level), that's stated explicitly rather than presented as equal-confidence fact.*
