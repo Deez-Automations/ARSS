@@ -1253,3 +1253,72 @@ Captured in full at the end of `ARSS_System_Design_Walkthrough.md` — five open
 *Journal updated: September 24, 2026 (design walkthrough recorded)*
 
 > **The Bottom Line:** Walking through the whole system out loud, one section at a time, caught real things a polished pitch would have glossed over — an imprecise comparison claim, an overclaimed data-validation story, and a genuinely fragile piece of the core novelty mechanism. None of it was fatal. All of it is now on record, parked deliberately rather than patched hastily, with a clear list of what the actual system-design pass still owes.
+
+---
+
+## 📁 SESSION: September 26, 2026 — Presentation 1 deck build, wording pass
+
+---
+
+### What happened
+
+Two days out from the Sept 28 – Oct 1 title-defence window, started the actual rebuild the Sept 24 entry called for: a fresh 9-slide deck (`cover`, `idea-motivation`, `problem`, `solution`, `scope`, `ccp`, `modules`, `workflow`, `delivering`) built around the locked workload-adaptive-triage direction, not the superseded Block/Isolate architecture the old decks still describe. Rubric still not received from the coordinator — carried over again from the Sept 24 entry, still unresolved.
+
+### The wording problem caught mid-build
+
+The `idea-motivation` slide read as a feature description — "a system that reads X and Y and decides Z" — rather than a pitch, described as sounding like any generic AI-security slide rather than this specific project. Diagnosed why: it stated the mechanism first and buried the one fact that's actually distinctive, that the 13-platform commercial survey (confirmed independently across two research passes back on Sept 23) found real, named platforms treating a calm day and a crisis identically.
+
+**Fix applied:** reordered to lead with the surprising, verified fact using real platform names (Splunk, Microsoft Sentinel, CrowdStrike) instead of "existing tools," followed by a blunt rebuttal line, closing on the severity-floor guarantee instead of a mechanism recap. No new claims introduced — every fact in the rewrite traces to the already-verified 13-platform check and the existing severity-floor design; only the order and word choice changed. Same treatment offered for the rest of the deck (Problem and Solution flagged as the next most likely to read generic), not yet applied — pending confirmation before spending more passes on wording.
+
+### Where this stands
+
+Deck currently lives only in the session scratchpad (`arss-tight-deck/project/`), not yet copied into `docs/` or committed — ephemeral by default, needs to land in the repo before it's usable outside this session.
+
+### What's Next
+
+- [ ] Decide whether to extend the same lead-with-the-hook wording pass to Problem, Solution, and the remaining slides
+- [ ] Copy the finished deck out of the session scratchpad into `docs/` (or wherever the team wants it tracked) once content is settled — nothing survives past this session otherwise
+- [ ] Rubric still outstanding from the coordinator — chase it down before finalizing slide structure against it
+- [ ] Resolve the Okafor 2026 verification flag (carried over, still open) before it's cited anywhere official
+- [ ] `ARSS_Paper.tex` and the scope document's technical sections still need the same locked-direction update the slides are now getting
+
+---
+
+*Journal updated: September 26, 2026*
+
+> **The Bottom Line:** The fix wasn't a new fact, it was word order — leading with the one verified, surprising, name-checkable thing instead of a mechanism recap. Cheap to apply, easy to keep applying to the rest of the deck, and it doesn't cost any of the discipline the last two months of citation-verification work built up, since nothing in the rewrite says anything the project hadn't already checked.
+
+---
+
+## 📁 SESSION: September 27, 2026 — Charlotte AI re-verification, clarification-doc review, sixth method locked in
+
+---
+
+### Charlotte AI re-verified after a direct challenge
+
+Team suspected CrowdStrike's "agentic" branding might already mean Charlotte AI is workload-adaptive, which would undercut ARSS's central commercial-gap claim. Re-checked directly rather than trusting the Sept 25 pass alone: fetched and searched CrowdStrike's current Agentic SOAR product page, the Detection Triage launch blog, the AgentWorks ecosystem blog, and their newest "Agentic, Outcome-Driven AI" press release, plus one independent third-party technical comparison (D3 Security). **Finding holds.** No mention anywhere of analyst workload, team capacity, queue depth, or backlog as an input to any autonomy or triage decision, across any of the five sources. Capacity language appears only as an *output* metric ("restores 40 hours/week," "reduces workload 70%"), never an input signal — autonomy is actually governed by human-set per-workflow presets and policy guardrails, not live conditions. One real tangential find worth keeping: an independent reviewer (D3 Security) flags that Charlotte's usage-based credit metering means costs spike hardest during "the noisy months, the incident months" — a billing critique, not a capability gap, but a citable independent data point. Logged as §10.5–10.8 in `ARSS_Facts_and_Figures.md`.
+
+### Pasted concept-clarification document reviewed
+
+Team brought a large Q&A-format reasoning document (produced elsewhere, pasted in for review) walking through the six-paradigm comparison, offline-vs-online RL, CQL/BCQ, data leakage, and provenance discipline. Checked it against the locked Sept 23 direction and basic ML/RL correctness rather than taking it at face value. **Verdict: sound.** Every technical distinction checked out (bandit vs. full RL, offline RL vs. supervised learning, CQL/BCQ's actual mechanism), and its own Section 16 was already honest about which parts go beyond the currently-registered scope, same discipline this project has held itself to for months. One real gap found: it repeats the "SIEM output replaces Stages 1–2 in deployment" framing without the caveat this project already established on July 19–20, that a real SIEM can't natively export CIC-IIoT 2025's 71 engineered features, so schema adaptation is unsolved future work, not a clean swap. Flagged, not yet patched into the source document since it isn't part of this repo.
+
+**Side-finding while checking the document's citation of "the registered scope":** `ARSS_Scope_Document_v3.md` (rewritten Sept 24 for the new direction) had silently regressed two citations this project already corrected elsewhere — the A2C reference (wrong title/author/venue, fixed 2026-07-20 in `ARSS_Paper.tex`) and the MITREtrieval title (paraphrased, fixed 2026-09-19) — both had reverted to their old, wrong form when v3 was written from scratch. Corrected both directly in v3 (bibliography, in-text table, and the prose literature-review paragraph) to match the verified versions already in `ARSS_Paper.tex`, since v3 isn't a signed document and this project's own precedent (the same two fixes, made the same way, in every other non-signed doc) already covers this.
+
+### Sixth method locked: online RL, explicitly to test whether continuous learning earns its cost
+
+Team decision: the paradigm comparison is six methods, not five, with online RL (DQN) as the sixth — added specifically to test whether continuous, in-deployment learning measurably improves the workload/security trade-off over a policy frozen after offline training, rather than being included because it "sounds more advanced." This directly answers Q30 from the reviewed clarification document, which had left the sixth method as "potentially" included pending justification; the justification is now explicit and recorded.
+
+Updated `ARSS_Scope_Document_v3.md` in five places — the Abstract, the §1.2 objectives list, the §1.2 solution-components paragraph, and the formal scope bullet list — from "five methods... offline reinforcement learning" to "six methods... offline reinforcement learning, and online reinforcement learning," each with the same explicit justification (testing whether continuous adaptation earns its complexity, not assumed). `ARSS_Paper.tex` was not touched — it still describes the pre-reset, single-RL-agent, MITRE-as-reward architecture in its title and body (Layer 1/Layer 2 ablation baselines, category-conditioned DQN framing throughout), a much larger already-tracked rewrite, not a five-minute count fix, and remains explicitly on the "What's Next" list below rather than patched piecemeal.
+
+### What's Next
+
+- [ ] `ARSS_Paper.tex` still needs the full locked-direction rewrite (title, system model, evaluation plan, baselines) — tracked since Sept 24, still not started
+- [ ] Decide whether the reviewed clarification document gets saved into `docs/` now that it's checked, or stays working-reference-only (open as of this entry)
+- [ ] If the clarification document is saved: patch its Q7/Q8 SIEM-deployment framing with the July 19–20 schema-adaptation caveat before treating it as citable
+- [ ] Everything carried over from Sept 26 (deck wording pass, rubric still outstanding, Okafor 2026 flag) still stands
+
+---
+
+*Journal updated: September 27, 2026*
+
+> **The Bottom Line:** Two challenges landed today, one aimed at a competitor's capabilities, one aimed at the project's own paperwork, and both got the same treatment: go check the primary source instead of trusting the last pass. Charlotte AI's "agentic" branding doesn't reach workload-awareness, confirmed fresh. The scope document's own citations had quietly regressed twice without anyone editing them on purpose — caught only because reviewing someone else's reasoning document happened to route back through the same paragraph. The sixth method is now locked with an actual reason attached instead of sitting as a maybe.
