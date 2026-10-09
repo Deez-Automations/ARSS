@@ -38,6 +38,12 @@ Thumbs.db
 # reference but not published; current docs live directly under docs/
 docs/archive/
 
+# Root-level old-version/off-topic files — old DTRA-era materials, stale
+# docx/pdf exports out of sync with current docs, the pre-reset related-work
+# table, downloaded literature PDFs (cited by DOI instead), and build files
+# orphaned now that v1/v2 aren't published. Kept locally, not published.
+archive/
+
 # Supervisor's signature — sensitive, local reference only
 Fawad Sign.pdf
 
