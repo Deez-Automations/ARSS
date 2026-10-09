@@ -13,9 +13,10 @@ COMBINED_CICIDS2017.csv
 uploads/
 training_checkpoints/
 
-# Trained models and training artifacts — regenerated locally, not source
-v1/models/
-v2/models/
+# Legacy pre-reset code — superseded by the current workload-adaptive direction,
+# kept locally for reference but not published
+v1/
+v2/
 *.h5
 *.pkl
 *.npy
@@ -32,6 +33,13 @@ Thumbs.db
 
 # Local Claude Code tooling (skills, plugins) — not project source
 .claude/
+
+# Old-version docs — describe the pre-reset architecture, kept locally for
+# reference but not published; current docs live directly under docs/
+docs/archive/
+
+# Supervisor's signature — sensitive, local reference only
+Fawad Sign.pdf
 
 # Documentation (Local Only — uncomment to exclude)
 # docs/
