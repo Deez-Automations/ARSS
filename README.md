@@ -97,8 +97,8 @@ Full research documentation, literature positioning, and the current scope docum
 | Name | ID |
 |------|----|
 | Muhammad Daniyal | 2023406 |
-| Haider Iqbal | 2023416 |
-| Syed Daud | 2023677 |
+| Muhammad Haider Iqbal | 2023416 |
+| Syed Muhammad Daud | 2023677 |
 
 **Supervisor:** Dr. Muhammad Fawad Khan — **Co-Supervisor:** Miss Hadia Abbas
 

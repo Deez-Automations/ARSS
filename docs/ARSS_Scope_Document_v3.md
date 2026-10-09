@@ -14,8 +14,8 @@ Version 3.0
 
 | **Muhammad Daniyal** | **2023406** |
 |----------------------|-------------|
-| **Haider Ali**       | **2023416** |
-| **Daud**             | **2023677** |
+| **Muhammad Haider Iqbal** | **2023416** |
+| **Syed Muhammad Daud**    | **2023677** |
 
 *Supervisor*
 **Dr. Muhammad Fawad Khan**
@@ -138,8 +138,8 @@ The project will focus on prototype-level implementation, evaluated in simulatio
 |---|---|
 | GIKI | Project sponsor |
 | Muhammad Daniyal (2023406) | System design, literature review, adaptive-policy development, documentation |
-| Haider Iqbal (2023416) | Detection ensemble training, SOC-state tracking implementation, testing |
-| Syed Daud (2023677) | Simulation environment, dataset preprocessing, dashboard development |
+| Muhammad Haider Iqbal (2023416) | Detection ensemble training, SOC-state tracking implementation, testing |
+| Syed Muhammad Daud (2023677) | Simulation environment, dataset preprocessing, dashboard development |
 | Dr Muhammad Fawad Khan | Technical guidance, research direction, academic oversight |
 | Miss Hadia Abbas | Technical guidance, security principles |
 | Senior Design Project Evaluation Panel | Project assessment and final evaluation |
